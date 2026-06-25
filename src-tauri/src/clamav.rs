@@ -177,7 +177,18 @@ pub fn execute_scan(
     let started_at = Utc::now();
     let scan_id = Uuid::new_v4().to_string();
     let targets = resolve_targets(&request, config)?;
-    let total_files = count_files(&targets).max(1);
+    // For full-system scans (target is root "/" or a drive), walking the entire
+    // filesystem to count files is extremely slow and error-prone.  Use a large
+    // sentinel so the progress bar moves smoothly; the real count comes from the
+    // clamscan summary line at the end.
+    let is_system_wide = matches!(request.mode, ScanMode::Full);
+    let total_files = if is_system_wide {
+        // Sentinel: progress will be driven by scanned_line_count until the
+        // real summary overwrites it.
+        usize::MAX / 2
+    } else {
+        count_files(&targets).max(1)
+    };
     let engine_name = engine_path
         .file_name()
         .and_then(OsStr::to_str)
@@ -190,7 +201,15 @@ pub fn execute_scan(
     }
 
     for target in &targets {
-        command.arg(target);
+        #[cfg(target_os = "windows")]
+        {
+            let path_str = target.to_string_lossy().replace('\\', "/");
+            command.arg(path_str);
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            command.arg(target);
+        }
     }
 
     command.stdout(Stdio::piped()).stderr(Stdio::piped());
@@ -244,13 +263,22 @@ pub fn execute_scan(
             scanned_line_count += 1;
         }
 
+        // For system-wide scans the total is unknown ahead of time.
+        // Show the live file counter as current/total; hold percent at 50%
+        // so the progress bar indicates activity without lying about completion.
+        let (progress_current, progress_total, progress_percent) = if is_system_wide {
+            (scanned_line_count, scanned_line_count.max(1), 50.0_f64)
+        } else {
+            let capped = scanned_line_count.min(total_files);
+            (capped, total_files, (capped as f64 / total_files as f64) * 100.0)
+        };
         app.emit(
             "scan-progress",
             ScanProgressEvent {
                 scan_id: scan_id.clone(),
-                current: scanned_line_count.min(total_files),
-                total: total_files,
-                percent: (scanned_line_count.min(total_files) as f64 / total_files as f64) * 100.0,
+                current: progress_current,
+                total: progress_total,
+                percent: progress_percent,
                 status: if threats.is_empty() {
                     "Analyse en cours".to_string()
                 } else {
@@ -272,8 +300,22 @@ pub fn execute_scan(
     }
 
     let parsed = parse_scan_output(&raw_output);
+    let exit_code = status.code();
+    let is_error = exit_code.unwrap_or(0) == 2;
+    let mut error_count = parsed.error_count;
+    if is_error && error_count == 0 {
+        error_count = 1;
+    }
+
+    // Prefer the authoritative summary value that clamscan/clamdscan prints
+    // ("Scanned files: N"). Fall back to the line-counter only when the summary
+    // is absent (e.g. early exit).  Never expose the sentinel value.
     let scanned_files = parsed.scanned_files.unwrap_or_else(|| {
-        if engine_kind == ScanEngineKind::Clamdscan && scanned_line_count == 0 {
+        if is_system_wide {
+            // No summary parsed and it was a system-wide scan — we genuinely
+            // don't know; report what we counted from output lines.
+            scanned_line_count
+        } else if engine_kind == ScanEngineKind::Clamdscan && scanned_line_count == 0 {
             total_files
         } else {
             scanned_line_count
@@ -288,6 +330,11 @@ pub fn execute_scan(
         Vec::new()
     };
 
+    let mut raw_output_str = raw_output.join("\n");
+    if is_error && raw_output_str.trim().is_empty() {
+        raw_output_str = "Une erreur système ClamAV est survenue (code de sortie 2). Vérifiez vos signatures de virus.".to_string();
+    }
+
     let finished_at = Utc::now();
     let report = ScanReport {
         id: scan_id.clone(),
@@ -299,24 +346,25 @@ pub fn execute_scan(
         scanned_files,
         infected_files,
         clean_files,
-        error_count: parsed.error_count,
+        error_count,
         access_denied_count: parsed.access_denied_paths.len(),
         access_denied_paths: parsed.access_denied_paths.clone(),
         duration_ms: (finished_at - started_at).num_milliseconds(),
-        status: normalize_scan_status(status.code(), infected_files),
+        status: normalize_scan_status(exit_code, infected_files),
         threats: threats.clone(),
         quarantined: quarantined.clone(),
-        raw_output: raw_output.join("\n"),
+        raw_output: raw_output_str,
     };
 
     append_scan_history(storage, &report)?;
 
+    // Emit a clean 100% completion event using the real scanned count.
     app.emit(
         "scan-progress",
         ScanProgressEvent {
             scan_id,
-            current: total_files,
-            total: total_files,
+            current: scanned_files.max(1),
+            total: scanned_files.max(1),
             percent: 100.0,
             status: if threats.is_empty() {
                 "Scan terminé".to_string()
@@ -350,7 +398,15 @@ pub fn scan_single_path(
         command.arg(argument);
     }
 
-    command.arg(file_path);
+    #[cfg(target_os = "windows")]
+    {
+        let path_str = file_path.to_string_lossy().replace('\\', "/");
+        command.arg(path_str);
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        command.arg(file_path);
+    }
     let output = command.output()?;
     let mut payload = String::from_utf8_lossy(&output.stdout).to_string();
 
