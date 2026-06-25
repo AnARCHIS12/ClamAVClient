@@ -965,6 +965,34 @@
             font-weight: 600;
         }
 
+        /* Badges plateforme dans la doc */
+        .docs-platform-badge {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 0.2rem 0.55rem;
+            border-radius: 4px;
+            vertical-align: middle;
+            margin-right: 0.4rem;
+        }
+        .docs-platform-badge--win  { background: rgba(0, 164, 239, 0.15); color: #38bdf8; border: 1px solid rgba(0,164,239,0.25); }
+        .docs-platform-badge--linux{ background: rgba(252, 198, 36, 0.12); color: #fbbf24; border: 1px solid rgba(252,198,36,0.25); }
+        .docs-platform-badge--mac  { background: rgba(255,255,255,0.06);   color: #e2e8f0; border: 1px solid rgba(255,255,255,0.12); }
+        .docs-platform-badge--warn { background: rgba(245,158,11,0.12);    color: #f59e0b; border: 1px solid rgba(245,158,11,0.25); }
+
+        /* Liste avec indicateurs colorés (remplace emojis ✅⚠️❌) */
+        .docs-feature-list { list-style: none; padding: 0; margin: 0.5rem 0; display: flex; flex-direction: column; gap: 0.4rem; }
+        .docs-feature-list li { padding: 0.4rem 0.75rem; border-radius: 6px; font-size: 0.875rem; display: flex; align-items: baseline; gap: 0.6rem; }
+        .docs-feature-list li::before { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; flex-shrink: 0; padding: 0.1rem 0.4rem; border-radius: 3px; }
+        .docs-feature-list__ok   { background: rgba(16,185,129,0.06); }
+        .docs-feature-list__ok::before   { content: "OK";   background: rgba(16,185,129,0.2);  color: #10b981; }
+        .docs-feature-list__warn { background: rgba(245,158,11,0.06); }
+        .docs-feature-list__warn::before { content: "LIMIT"; background: rgba(245,158,11,0.2); color: #f59e0b; }
+        .docs-feature-list__err  { background: rgba(239,68,68,0.06);  }
+        .docs-feature-list__err::before  { content: "NON";  background: rgba(239,68,68,0.2);   color: #ef4444; }
+
         .docs-content {
             background-color: rgba(255, 255, 255, 0.01);
             border: 1px solid var(--border-color);
@@ -2001,10 +2029,10 @@ sudo apt-get install -f</code></pre>
                         <h3>Configuration des Privilèges</h3>
                         <p>Pour analyser l'intégralité du système de fichiers et surveiller en temps réel les écritures, l'application requiert des droits élevés selon la plateforme.</p>
 
-                        <h4>🪟 Windows</h4>
+                        <h4><span class="docs-platform-badge docs-platform-badge--win">Windows</span></h4>
                         <p>L'installateur MSI déclenche automatiquement la boîte de dialogue <strong>UAC</strong> (Contrôle de compte d'utilisateur). Il suffit de cliquer sur <em>Oui</em>. Aucune commande supplémentaire n'est nécessaire.</p>
 
-                        <h4>🐧 Linux — méthode recommandée (interface graphique)</h4>
+                        <h4><span class="docs-platform-badge docs-platform-badge--linux">Linux</span> — méthode recommandée (interface graphique)</h4>
                         <p>Utilisez <code>pkexec</code> pour déclencher une boîte de dialogue graphique de demande de mot de passe :</p>
                         <pre><code>pkexec clamavclient</code></pre>
                         <p>Si <code>pkexec</code> n'est pas disponible, vous pouvez lancer l'application directement avec <code>sudo</code> depuis un terminal :</p>
@@ -2012,7 +2040,7 @@ sudo apt-get install -f</code></pre>
 # ou, si installé via AppImage :
 sudo ./ClamAvClient.AppImage</code></pre>
 
-                        <h4>🐧 Linux — cas particulier Wayland (GNOME / Fedora)</h4>
+                        <h4><span class="docs-platform-badge docs-platform-badge--linux">Linux</span> — cas particulier Wayland (GNOME / Fedora)</h4>
                         <p>Sur Wayland, <code>sudo</code> seul peut bloquer l'affichage graphique. Transmettez la variable d'affichage :</p>
                         <pre><code># Wayland
 sudo --preserve-env=WAYLAND_DISPLAY,XDG_RUNTIME_DIR clamavclient
@@ -2020,7 +2048,7 @@ sudo --preserve-env=WAYLAND_DISPLAY,XDG_RUNTIME_DIR clamavclient
 # X11 (fallback)
 sudo DISPLAY=$DISPLAY clamavclient</code></pre>
 
-                        <h4>🐧 Linux — scan sans ouvrir l'interface (terminal pur)</h4>
+                        <h4><span class="docs-platform-badge docs-platform-badge--linux">Linux</span> — scan sans ouvrir l'interface (terminal pur)</h4>
                         <p>Si vous n'avez pas d'environnement graphique, vous pouvez utiliser directement le moteur ClamAV :</p>
                         <pre><code># Scan rapide du dossier personnel
 sudo clamscan --recursive --infected ~/
@@ -2031,18 +2059,18 @@ sudo clamscan --recursive --infected /
 # Avec le daemon clamd (plus rapide)
 sudo clamdscan --multiscan /home</code></pre>
 
-                        <h4>🍎 macOS</h4>
+                        <h4><span class="docs-platform-badge docs-platform-badge--mac">macOS</span></h4>
                         <p>Montez le <code>.dmg</code> et glissez l'application dans <code>/Applications</code>. Au premier lancement, macOS demandera une autorisation via la boîte de dialogue système. Pour les scans système complets :</p>
                         <pre><code>sudo /Applications/ClamAvClient.app/Contents/MacOS/ClamAvClient</code></pre>
-                        <p>Sur macOS, accordez aussi l'<strong>Accès complet au disque</strong> dans <em>Réglages Système → Confidentialité et sécurité → Accès complet au disque</em>.</p>
+                        <p>Sur macOS, accordez aussi l'<strong>Accès complet au disque</strong> dans <em>Réglages Système &rarr; Confidentialité et sécurité &rarr; Accès complet au disque</em>.</p>
 
-                        <h4>⚠️ Note sur le mode standard (sans élévation)</h4>
+                        <h4><span class="docs-platform-badge docs-platform-badge--warn">Note</span> Mode standard (sans élévation)</h4>
                         <p>L'application fonctionne <strong>aussi sans droits root</strong> en mode utilisateur standard. Dans ce cas :</p>
-                        <ul>
-                            <li>✅ Scan de votre dossier personnel (<code>~</code>) : disponible</li>
-                            <li>✅ Protection temps réel sur vos téléchargements : disponible</li>
-                            <li>⚠️ Scan des dossiers système (<code>/etc</code>, <code>/usr</code>, <code>/bin</code>...) : accès refusé sur certains fichiers (comptés dans les erreurs)</li>
-                            <li>❌ Scan complet du système : résultats partiels sans droits root</li>
+                        <ul class="docs-feature-list">
+                            <li class="docs-feature-list__ok">Scan de votre dossier personnel (<code>~</code>) : disponible</li>
+                            <li class="docs-feature-list__ok">Protection temps réel sur vos téléchargements : disponible</li>
+                            <li class="docs-feature-list__warn">Scan des dossiers système (<code>/etc</code>, <code>/usr</code>, <code>/bin</code>...) : accès refusé sur certains fichiers (comptés dans les erreurs)</li>
+                            <li class="docs-feature-list__err">Scan complet du système : résultats partiels sans droits root</li>
                         </ul>
                     </div>
 
