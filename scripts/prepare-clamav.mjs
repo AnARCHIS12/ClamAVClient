@@ -30,7 +30,16 @@ fs.mkdirSync(destination.db, { recursive: true });
 
 const spec = buildPlatformSpec(currentPlatform, destination);
 const resolvedBinDir = firstMatchingBinDir(spec.binCandidates, spec.requiredBins);
-const resolvedDbDir = firstMatchingDbDir(spec.dbCandidates);
+
+const dbCandidates = [...spec.dbCandidates];
+if (resolvedBinDir) {
+  dbCandidates.push(
+    path.join(resolvedBinDir, "..", "database"),
+    path.join(resolvedBinDir, "..", "db"),
+    path.join(resolvedBinDir, "..", "share", "clamav")
+  );
+}
+const resolvedDbDir = firstMatchingDbDir(dbCandidates);
 
 if (!resolvedBinDir) {
   console.error("Impossible de trouver les binaires ClamAV requis pour cette plateforme.");
@@ -70,6 +79,7 @@ function buildPlatformSpec(platform, destination) {
   const linuxDbFallback = path.join(vendorRoot, "linux", "db");
   const currentDbFallback = destination.db;
   const currentBinFallback = destination.bin;
+  const pathDirs = (process.env.PATH || "").split(path.delimiter);
 
   if (platform === "linux") {
     return {
@@ -78,7 +88,8 @@ function buildPlatformSpec(platform, destination) {
         withJoin(process.env.CLAMAV_SOURCE_ROOT, "bin"),
         currentBinFallback,
         "/usr/local/bin",
-        "/usr/bin"
+        "/usr/bin",
+        ...pathDirs
       ]),
       dbCandidates: compact([
         process.env.CLAMAV_DB_DIR,
@@ -101,7 +112,8 @@ function buildPlatformSpec(platform, destination) {
         currentBinFallback,
         "/usr/local/clamav/bin",
         "/usr/local/bin",
-        "/opt/homebrew/bin"
+        "/opt/homebrew/bin",
+        ...pathDirs
       ]),
       dbCandidates: compact([
         process.env.CLAMAV_DB_DIR,
@@ -123,7 +135,8 @@ function buildPlatformSpec(platform, destination) {
       process.env.CLAMAV_SOURCE_ROOT,
       currentBinFallback,
       "C:\\Program Files\\ClamAV",
-      "C:\\Program Files (x86)\\ClamAV"
+      "C:\\Program Files (x86)\\ClamAV",
+      ...pathDirs
     ]),
     dbCandidates: compact([
       process.env.CLAMAV_DB_DIR,
