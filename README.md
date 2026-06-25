@@ -45,11 +45,11 @@ Les builds sont disponibles sur [GitHub Releases](https://github.com/AnARCHIS12/
 
 | Plateforme | Format | Lien |
 |------------|--------|------|
-| Linux | `.deb` (Ubuntu/Debian) | [Telecharger](https://github.com/AnARCHIS12/ClamAVClient/releases/latest/download/clamavclient.deb) |
-| Linux | `.rpm` (Fedora/RHEL) | [Telecharger](https://github.com/AnARCHIS12/ClamAVClient/releases/latest/download/clamavclient.rpm) |
-| Linux | `.AppImage` | [Telecharger](https://github.com/AnARCHIS12/ClamAVClient/releases/latest/download/ClamAvClient.AppImage) |
-| macOS | `.dmg` | [Telecharger](https://github.com/AnARCHIS12/ClamAVClient/releases/latest/download/ClamAvClient.dmg) |
-| Windows | `.msi` | [Telecharger](https://github.com/AnARCHIS12/ClamAVClient/releases/latest/download/ClamAvClient-setup.msi) |
+| Linux | `.deb` (Ubuntu/Debian) | [Telecharger](https://github.com/AnARCHIS12/ClamAVClient/releases/latest/download/ClamAvClient_0.1.0_amd64.deb) |
+| Linux | `.rpm` (Fedora/RHEL) | [Telecharger](https://github.com/AnARCHIS12/ClamAVClient/releases/latest/download/ClamAvClient-0.1.0-1.x86_64.rpm) |
+| Linux | `.AppImage` | [Telecharger](https://github.com/AnARCHIS12/ClamAVClient/releases/latest/download/ClamAvClient_0.1.0_amd64.AppImage) |
+| macOS | `.dmg` | [Telecharger](https://github.com/AnARCHIS12/ClamAVClient/releases/latest/download/ClamAvClient_0.1.0_x64.dmg) |
+| Windows | `.msi` | [Telecharger](https://github.com/AnARCHIS12/ClamAVClient/releases/latest/download/ClamAvClient_0.1.0_x64_fr-FR.msi) |
 
 ---
 
