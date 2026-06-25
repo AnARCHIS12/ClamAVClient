@@ -1,0 +1,26 @@
+{
+  "name": "clamavclient",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "prepare:clamav": "node scripts/prepare-clamav.mjs",
+    "build:desktop": "node scripts/build-desktop.mjs",
+    "build:appimage": "npm run prepare:clamav && npm run tauri build -- --bundles appimage",
+    "dev:elevated": "./scripts/run-elevated.sh",
+    "tauri:dev:elevated": "./scripts/run-elevated.sh"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.0.0",
+    "@tauri-apps/plugin-dialog": "^2.0.0",
+    "@tauri-apps/plugin-notification": "^2.0.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0",
+    "vite": "^7.0.0"
+  }
+}

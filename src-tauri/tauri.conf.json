@@ -1,0 +1,78 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "ClamAvClient",
+  "version": "0.1.0",
+  "identifier": "com.openai.clamavclient",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "ClamAvClient",
+        "width": 1440,
+        "height": 940,
+        "minWidth": 1180,
+        "minHeight": 760,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "createUpdaterArtifacts": false,
+    "resources": [
+      "vendor/clamav/**/*",
+      "scripts/clamavclient-linux.sh",
+      "scripts/clamavclient-macos.sh",
+      "scripts/postinstall-linux.sh",
+      "scripts/preremove-linux.sh",
+      "scripts/postinstall-windows.ps1",
+      "scripts/preremove-windows.ps1",
+      "com.openai.clamavclient.policy",
+      "com.openai.clamavclient.service",
+      "com.openai.clamavclient.plist"
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      },
+      "wix": {
+        "language": "fr-FR"
+      }
+    },
+    "linux": {
+      "deb": {
+        "depends": ["policykit-1"],
+        "postInstallScript": "scripts/postinstall-linux.sh",
+        "preRemoveScript": "scripts/preremove-linux.sh"
+      },
+      "rpm": {
+        "postInstallScript": "scripts/postinstall-linux.sh",
+        "preRemoveScript": "scripts/preremove-linux.sh"
+      },
+      "appimage": {
+        "bundleMediaFramework": false
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.13"
+    }
+  }
+}

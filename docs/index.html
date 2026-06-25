@@ -1,0 +1,2532 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClamAVClient - Antivirus Desktop Léger & Moderne</title>
+    <meta name="description" content="Une interface de sécurité de pointe pour ClamAV construite avec Rust et Tauri. Protection en temps réel, quarantaine automatique et mises à jour de signatures.">
+    <link rel="icon" href="https://raw.githubusercontent.com/Cisco-Talos/clamav/main/logo.png" type="image/png">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg-main: #06080c;
+            --bg-card: #0d1117;
+            --bg-elevated: #131922;
+            --bg-glass: rgba(13, 17, 23, 0.7);
+            --border-color: rgba(255, 255, 255, 0.06);
+            --border-glow: rgba(244, 63, 94, 0.15);
+            
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            
+            --accent: #f43f5e;
+            --accent-hover: #fb7185;
+            --accent-soft: rgba(244, 63, 94, 0.1);
+            --accent-glow: rgba(244, 63, 94, 0.3);
+            
+            --success: #10b981;
+            --success-soft: rgba(16, 185, 129, 0.1);
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            
+            --font-display: 'Outfit', sans-serif;
+            --font-sans: 'Inter', sans-serif;
+            --font-mono: 'Fira Code', monospace;
+            
+            --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+            --shadow-glow: 0 0 25px rgba(244, 63, 94, 0.15);
+            
+            scroll-behavior: smooth;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            overflow-x: hidden;
+            max-width: 100vw;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(244, 63, 94, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(244, 63, 94, 0.04) 0%, transparent 40%);
+        }
+
+        /* Utilitaire d'alignement */
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Header avec Glassmorphism */
+        header.site-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background-color: var(--bg-glass);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .header-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 70px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .brand img {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 8px rgba(244, 63, 94, 0.3));
+        }
+
+        .brand span {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.25rem;
+            letter-spacing: -0.5px;
+        }
+
+        nav.main-nav {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        nav.main-nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        nav.main-nav a:hover {
+            color: var(--accent);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(244, 63, 94, 0.3);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(244, 63, 94, 0.4);
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-elevated);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-color: var(--text-secondary);
+            transform: translateY(-1px);
+        }
+
+        .btn-ghost {
+            background-color: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+        }
+
+        .btn-ghost:hover {
+            color: var(--text-primary);
+            border-color: var(--text-secondary);
+        }
+
+        /* Hero Section */
+        section.hero-section {
+            padding: 9rem 0 5rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 1rem;
+            background-color: var(--accent-soft);
+            border: 1px solid rgba(244, 63, 94, 0.2);
+            border-radius: 99px;
+            color: var(--accent);
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 2rem;
+            animation: pulse-glow 3s infinite ease-in-out;
+        }
+
+        h1#landing-title {
+            font-family: var(--font-display);
+            font-size: 4rem;
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -1.5px;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--text-primary) 30%, var(--text-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-desc {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 800px;
+            margin: 0 auto 3rem;
+            line-height: 1.5;
+        }
+
+        .hero-actions-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.25rem;
+            margin-bottom: 4rem;
+        }
+
+        /* Badges de technologies */
+        .tech-badges {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .tech-badge-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tech-badge-item svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        /* Section Simulateur interactif */
+        section.demo-section {
+            padding: 4rem 0 6rem;
+        }
+
+        .demo-title-container {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .demo-title-container h2 {
+            font-family: var(--font-display);
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .demo-title-container p {
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Mockup de l'application Tauri */
+        .app-mockup {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+            display: grid;
+            grid-template-rows: 50px 1fr;
+            height: 600px;
+            max-width: 1000px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .app-mockup::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            opacity: 0.3;
+        }
+
+        /* Windowbar de l'app mockup */
+        .mock-windowbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: var(--bg-elevated);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 1rem;
+        }
+
+        .mock-windowbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .mock-logo {
+            width: 20px;
+            height: 20px;
+            background-color: #fff;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2px;
+        }
+
+        .mock-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .mock-windowbar-brand strong {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .mock-windowbar-brand span {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            border-left: 1px solid var(--border-color);
+            padding-left: 0.5rem;
+        }
+
+        .mock-windowbar-status {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .mock-status-chip {
+            background-color: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 99px;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .mock-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--success);
+        }
+
+        .mock-dot.pulse {
+            animation: pulse-dot 1.5s infinite ease-in-out;
+        }
+
+        .mock-window-actions {
+            display: flex;
+            gap: 0.35rem;
+        }
+
+        .mock-dot-win {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #3b3f46;
+        }
+
+        .mock-dot-win.close { background-color: #ef4444; }
+        .mock-dot-win.minimize { background-color: #f59e0b; }
+        .mock-dot-win.maximize { background-color: #10b981; }
+
+        /* Layout interne de l'app mockup */
+        .mock-layout {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            height: 100%;
+            min-height: 0;
+        }
+
+        /* Sidebar de l'app mockup */
+        .mock-sidebar {
+            background-color: rgba(13, 17, 23, 0.5);
+            border-right: 1px solid var(--border-color);
+            padding: 1.25rem 0.75rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .mock-sidebar-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+            padding-left: 0.5rem;
+        }
+
+        .mock-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .mock-nav-btn {
+            background: none;
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+            font-family: var(--font-sans);
+            font-size: 0.85rem;
+            font-weight: 500;
+            padding: 0.6rem 0.75rem;
+            text-align: left;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: all 0.15s ease;
+        }
+
+        .mock-nav-btn span.num {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            width: 14px;
+        }
+
+        .mock-nav-btn:hover {
+            background-color: rgba(255, 255, 255, 0.03);
+            color: var(--text-primary);
+        }
+
+        .mock-nav-btn.active {
+            background-color: var(--accent-soft);
+            color: var(--accent);
+            border-color: rgba(244, 63, 94, 0.15);
+            font-weight: 600;
+        }
+
+        .mock-nav-btn.active span.num {
+            color: var(--accent);
+        }
+
+        .mock-sidebar-footer {
+            background-color: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem;
+        }
+
+        .mock-sidebar-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            padding: 0.25rem 0;
+            color: var(--text-secondary);
+        }
+
+        .mock-sidebar-row strong {
+            color: var(--text-primary);
+        }
+
+        /* Espace de travail de l'app mockup */
+        .mock-workspace {
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            min-height: 0;
+        }
+
+        .mock-view-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        .mock-view-header h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .mock-view-header p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Vues */
+        .mock-view {
+            display: none;
+            flex-direction: column;
+            gap: 1.25rem;
+            min-height: 0;
+        }
+
+        .mock-view.active {
+            display: flex;
+        }
+
+        /* Vue Dashboard */
+        .mock-status-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+        }
+
+        .mock-card {
+            background-color: var(--bg-elevated);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+        }
+
+        .mock-card span.label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        .mock-card strong {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .mock-card-accent strong {
+            color: var(--accent);
+        }
+
+        .mock-dashboard-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .mock-panel {
+            background-color: rgba(255, 255, 255, 0.01);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .mock-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .mock-panel-header h4 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+        }
+
+        .mock-panel-body {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .mock-panel-wide {
+            grid-column: 1 / -1;
+        }
+
+        .mock-list-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0.75rem;
+            background-color: rgba(255, 255, 255, 0.02);
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Vue Scan */
+        .mock-scan-layout {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 1rem;
+            min-height: 0;
+        }
+
+        .mock-mode-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+        }
+
+        .mock-mode-card {
+            border: 1px solid var(--border-color);
+            background-color: rgba(255, 255, 255, 0.01);
+            border-radius: 8px;
+            padding: 0.75rem;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s ease;
+        }
+
+        .mock-mode-card:hover {
+            border-color: rgba(244, 63, 94, 0.2);
+            background-color: rgba(244, 63, 94, 0.02);
+        }
+
+        .mock-mode-card.active {
+            border-color: var(--accent);
+            background-color: var(--accent-soft);
+        }
+
+        .mock-mode-card h5 {
+            font-size: 0.85rem;
+            margin-bottom: 0.2rem;
+            font-weight: 600;
+        }
+
+        .mock-mode-card p {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .mock-progress-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .mock-progress-bar {
+            height: 8px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 99px;
+            overflow: hidden;
+        }
+
+        .mock-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #93293b 0%, var(--accent) 100%);
+            transition: width 0.1s linear;
+        }
+
+        .mock-scan-terminal {
+            background-color: #07090c;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.75rem;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            height: 180px;
+            overflow-y: auto;
+            color: #d1d5db;
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 0.25rem;
+        }
+
+        .terminal-line {
+            line-height: 1.4;
+            word-break: break-all;
+        }
+
+        .terminal-line.infected {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .terminal-line.success {
+            color: var(--success);
+        }
+
+        /* Vue Quarantaine */
+        .mock-quarantine-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+
+        .mock-quarantine-table th {
+            text-align: left;
+            padding: 0.5rem 0.75rem;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+        }
+
+        .mock-quarantine-table td {
+            padding: 0.6rem 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .mock-quarantine-table tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.01);
+        }
+
+        .btn-table-action {
+            padding: 0.2rem 0.5rem;
+            font-size: 0.7rem;
+            border-radius: 4px;
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            cursor: pointer;
+            margin-right: 0.25rem;
+            transition: all 0.15s ease;
+        }
+
+        .btn-table-action:hover {
+            color: var(--text-primary);
+            border-color: var(--text-secondary);
+        }
+
+        .btn-table-action.delete:hover {
+            background-color: var(--danger);
+            border-color: var(--danger);
+            color: #fff;
+        }
+
+        /* Vue Logs */
+        .mock-logs-code {
+            background-color: #07090c;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: #38bdf8;
+            overflow-x: auto;
+            height: 350px;
+        }
+
+        /* Section Fonctionnalités */
+        section.features-section {
+            padding: 5rem 0;
+            background-color: rgba(13, 17, 23, 0.2);
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-title h2 {
+            font-family: var(--font-display);
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .section-title p {
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+            gap: 1.5rem;
+        }
+
+        .feature-item-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-item-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(244, 63, 94, 0.25);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(244, 63, 94, 0.05);
+        }
+
+        .feature-icon-container {
+            width: 48px;
+            height: 48px;
+            background-color: var(--accent-soft);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-icon-container svg {
+            width: 24px;
+            height: 24px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+        }
+
+        .feature-item-card h3 {
+            font-family: var(--font-display);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-item-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        /* Section Téléchargements */
+        section.download-section {
+            padding: 6rem 0;
+            position: relative;
+        }
+
+        .download-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-top: 3rem;
+        }
+
+        .download-platform-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2.5rem 2rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .download-platform-card:hover {
+            border-color: rgba(244, 63, 94, 0.2);
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .platform-icon {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .platform-icon svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .download-platform-card h3 {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .download-platform-card p.info {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 2rem;
+            min-height: 40px;
+        }
+
+        .download-platform-card .btn-download-action {
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+
+        .download-platform-card span.meta-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Section Documentation */
+        section.docs-section {
+            padding: 5rem 0;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .docs-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 3rem;
+            margin-top: 3rem;
+        }
+
+        .docs-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            position: sticky;
+            top: 100px;
+            height: fit-content;
+        }
+
+        .docs-sidebar-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-family: var(--font-sans);
+            font-size: 0.95rem;
+            font-weight: 500;
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border-left: 2px solid transparent;
+        }
+
+        .docs-sidebar-btn:hover {
+            color: var(--text-primary);
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .docs-sidebar-btn.active {
+            color: var(--accent);
+            border-left-color: var(--accent);
+            background-color: var(--accent-soft);
+            font-weight: 600;
+        }
+
+        .docs-content {
+            background-color: rgba(255, 255, 255, 0.01);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2.5rem;
+            min-height: 400px;
+        }
+
+        .docs-panel {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .docs-panel.active {
+            display: block;
+        }
+
+        .docs-panel h3 {
+            font-family: var(--font-display);
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .docs-panel h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 1.5rem 0 0.5rem;
+            color: var(--accent-hover);
+        }
+
+        .docs-panel p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+        }
+
+        .docs-panel ul {
+            margin-left: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-secondary);
+        }
+
+        .docs-panel li {
+            margin-bottom: 0.5rem;
+        }
+
+        .docs-panel code {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            background-color: var(--bg-elevated);
+            padding: 0.15rem 0.35rem;
+            border-radius: 4px;
+            color: var(--accent-hover);
+            border: 1px solid var(--border-color);
+        }
+
+        .docs-panel pre {
+            background-color: #07090c;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.25rem;
+            overflow-x: auto;
+            margin: 1rem 0 1.5rem;
+        }
+
+        .docs-panel pre code {
+            background-color: transparent;
+            border: none;
+            color: #e2e8f0;
+            padding: 0;
+            font-size: 0.85rem;
+        }
+
+        /* Section FAQ */
+        section.faq-section {
+            padding: 5rem 0;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .faq-grid {
+            max-width: 800px;
+            margin: 3rem auto 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .faq-item {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .faq-question-btn {
+            width: 100%;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            font-size: 1.05rem;
+            font-weight: 600;
+            padding: 1.25rem 1.5rem;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .faq-question-btn svg {
+            width: 20px;
+            height: 20px;
+            transition: transform 0.2s ease;
+            stroke: var(--text-secondary);
+        }
+
+        .faq-item.active {
+            border-color: rgba(244, 63, 94, 0.2);
+        }
+
+        .faq-item.active .faq-question-btn svg {
+            transform: rotate(180deg);
+            stroke: var(--accent);
+        }
+
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease-out;
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .faq-answer-inner {
+            padding: 0 1.5rem 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* Footer */
+        footer.site-footer {
+            background-color: #040508;
+            border-top: 1px solid var(--border-color);
+            padding: 4rem 0 3rem;
+            text-align: center;
+        }
+
+        .footer-logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .footer-logo img {
+            width: 24px;
+            height: 24px;
+        }
+
+        .footer-logo span {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .footer-info {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.15s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--accent);
+        }
+
+        .footer-credits {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-color);
+            padding-top: 1.5rem;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% {
+                box-shadow: 0 0 10px rgba(244, 63, 94, 0.05);
+                border-color: rgba(244, 63, 94, 0.15);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(244, 63, 94, 0.2);
+                border-color: rgba(244, 63, 94, 0.35);
+            }
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.6;
+            }
+        }
+
+        /* ===================================================
+           TABLE OVERFLOW WRAPPER (mobile)
+        =================================================== */
+        .table-scroll-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+        }
+
+        /* ===================================================
+           HAMBURGER MENU
+        =================================================== */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 6px;
+            transition: background 0.15s;
+        }
+        .hamburger:hover { background: rgba(255,255,255,0.05); }
+        .hamburger span {
+            display: block;
+            width: 22px;
+            height: 2px;
+            background: var(--text-primary);
+            border-radius: 2px;
+            transition: all 0.25s ease;
+        }
+        .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+        .hamburger.open span:nth-child(2) { opacity: 0; }
+        .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+        .mobile-menu {
+            display: none;
+            position: fixed;
+            top: 70px;
+            left: 0;
+            right: 0;
+            background: rgba(6, 8, 12, 0.97);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.5rem;
+            z-index: 99;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        .mobile-menu.open { display: flex; }
+        .mobile-menu a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 500;
+            padding: 0.85rem 1rem;
+            border-radius: 8px;
+            transition: all 0.15s;
+        }
+        .mobile-menu a:hover {
+            color: var(--text-primary);
+            background: rgba(255,255,255,0.04);
+        }
+        .mobile-menu .btn {
+            margin-top: 0.75rem;
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* ===================================================
+           RESPONSIVE — 1280px (tablette large)
+        =================================================== */
+        @media (max-width: 1280px) {
+            .container { padding: 0 1.5rem; }
+            h1#landing-title { font-size: 3.5rem; }
+            .download-cards-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* ===================================================
+           RESPONSIVE — 1024px (tablette)
+        =================================================== */
+        @media (max-width: 1024px) {
+            h1#landing-title { font-size: 3rem; }
+
+            /* Mockup : sidebar passe en ligne */
+            .app-mockup { height: auto; }
+            .mock-layout { grid-template-columns: 1fr; }
+            .mock-sidebar {
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                padding: 0.75rem 1rem;
+            }
+            .mock-sidebar-label, .mock-sidebar-footer { display: none; }
+            .mock-nav { flex-direction: row; flex-wrap: wrap; gap: 0.25rem; width: 100%; }
+            .mock-nav-btn { padding: 0.4rem 0.75rem; font-size: 0.8rem; }
+            .mock-workspace { height: 420px; }
+
+            /* Downloads : 2 colonnes */
+            .download-cards-grid { grid-template-columns: repeat(2, 1fr); }
+
+            /* Docs : sidebar horizontale */
+            .docs-container { grid-template-columns: 1fr; gap: 1.5rem; }
+            .docs-sidebar {
+                position: static;
+                flex-direction: row;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 0.5rem;
+                gap: 0;
+                border-bottom: 1px solid var(--border-color);
+            }
+            .docs-sidebar-btn {
+                border-left: none;
+                border-bottom: 2px solid transparent;
+                white-space: nowrap;
+                flex-shrink: 0;
+                padding: 0.6rem 1rem;
+            }
+            .docs-sidebar-btn.active {
+                border-left: none;
+                border-bottom-color: var(--accent);
+            }
+        }
+
+        /* ===================================================
+           RESPONSIVE — 768px (mobile paysage)
+        =================================================== */
+        @media (max-width: 768px) {
+            /* Header */
+            header.site-header { position: fixed; }
+            nav.main-nav { display: none; }
+            .header-actions { gap: 0.5rem; }
+            .header-actions .btn-primary { display: none; }
+            .header-actions .btn-ghost { padding: 0.4rem 0.75rem; font-size: 0.8rem; }
+            .hamburger { display: flex; }
+            .header-wrap { height: 58px; }
+            .mobile-menu { top: 58px; }
+
+            /* Container */
+            .container { padding: 0 1rem; }
+
+            /* Hero */
+            section.hero-section { padding: 5.5rem 0 3rem; }
+            h1#landing-title { font-size: 2.2rem; letter-spacing: -0.75px; line-height: 1.15; }
+            .hero-desc { font-size: 0.98rem; margin-bottom: 2rem; }
+            .hero-actions-container {
+                flex-direction: column;
+                align-items: stretch;
+                width: 100%;
+                max-width: 360px;
+                margin-left: auto;
+                margin-right: auto;
+                gap: 0.65rem;
+            }
+            .hero-actions-container .btn {
+                width: 100%;
+                justify-content: center;
+                padding: 0.8rem 1.2rem;
+            }
+            .tech-badges { gap: 0.75rem; font-size: 0.78rem; flex-wrap: wrap; justify-content: center; }
+            .dot-separator { display: none; }
+
+            /* Demo / Mockup */
+            section.demo-section { padding: 2.5rem 0 3.5rem; }
+            .demo-title-container h2 { font-size: 1.65rem; }
+            .demo-title-container p { font-size: 0.9rem; }
+            .app-mockup {
+                border-radius: 8px;
+                height: auto;
+                overflow: hidden;
+            }
+            .mock-windowbar-status { display: none; }
+            .mock-workspace { height: auto; min-height: 340px; max-height: 420px; padding: 1rem; gap: 0.75rem; }
+            .mock-status-grid { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+            .mock-card { padding: 0.6rem 0.75rem; }
+            .mock-card strong { font-size: 0.9rem; }
+            .mock-dashboard-layout { grid-template-columns: 1fr; }
+            .mock-scan-layout { grid-template-columns: 1fr; }
+            .mock-scan-terminal { height: 120px; font-size: 0.7rem; }
+            .mock-quarantine-table { font-size: 0.72rem; }
+            .mock-quarantine-table th, .mock-quarantine-table td { padding: 0.4rem 0.5rem; }
+            .mock-logs-code { height: 220px; font-size: 0.7rem; }
+
+            /* Features */
+            section.features-section { padding: 3rem 0; }
+            .section-title { margin-bottom: 2.5rem; }
+            .section-title h2 { font-size: 1.7rem; }
+            .features-grid { grid-template-columns: 1fr; gap: 0.875rem; }
+            .feature-item-card { padding: 1.5rem; }
+            .feature-item-card:hover { transform: none; }
+
+            /* Downloads */
+            section.download-section { padding: 3.5rem 0; }
+            .download-cards-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                margin-top: 2rem;
+            }
+            .download-platform-card {
+                padding: 1.75rem 1.5rem;
+                flex-direction: row;
+                text-align: left;
+                align-items: flex-start;
+                gap: 1.25rem;
+            }
+            .platform-icon { width: 44px; height: 44px; margin-bottom: 0; flex-shrink: 0; }
+            .download-platform-card > div { flex: 1; }
+            .download-platform-card h3 { font-size: 1.2rem; margin-bottom: 0.25rem; }
+            .download-platform-card p.info { font-size: 0.82rem; margin-bottom: 1rem; min-height: unset; }
+            .download-platform-card:hover { transform: none; }
+
+            /* Docs */
+            section.docs-section { padding: 3rem 0; }
+            .docs-content { padding: 1.25rem; min-height: unset; }
+            .docs-panel h3 { font-size: 1.3rem; }
+            .docs-panel h4 { font-size: 0.95rem; }
+            .docs-panel p, .docs-panel li { font-size: 0.88rem; }
+            .docs-panel pre { padding: 0.875rem; font-size: 0.78rem; }
+
+            /* FAQ */
+            section.faq-section { padding: 3rem 0; }
+            .faq-grid { margin-top: 2rem; gap: 0.75rem; }
+            .faq-question-btn { font-size: 0.92rem; padding: 1rem 1.1rem; }
+            .faq-answer-inner { font-size: 0.88rem; padding: 0 1.1rem 1.1rem; }
+
+            /* Footer */
+            footer.site-footer { padding: 2.5rem 0 1.5rem; }
+            .footer-links { flex-wrap: wrap; gap: 0.75rem; justify-content: center; }
+            .footer-info { font-size: 0.8rem; }
+        }
+
+        /* ===================================================
+           RESPONSIVE — 480px (mobile portrait)
+        =================================================== */
+        @media (max-width: 480px) {
+            .container { padding: 0 0.875rem; }
+
+            /* Hero */
+            section.hero-section { padding: 5rem 0 2.5rem; }
+            h1#landing-title { font-size: 1.85rem; letter-spacing: -0.5px; }
+            .hero-badge { font-size: 0.7rem; padding: 0.3rem 0.75rem; }
+            .hero-desc { font-size: 0.9rem; }
+            .hero-actions-container { max-width: 100%; }
+            .tech-badges { font-size: 0.73rem; gap: 0.5rem; }
+
+            /* Mockup ultra compact */
+            .mock-nav-btn { font-size: 0.75rem; padding: 0.35rem 0.5rem; }
+            .mock-view-header h3 { font-size: 1rem; }
+            .mock-status-grid { grid-template-columns: repeat(2, 1fr); }
+            .mock-workspace { min-height: 280px; max-height: 360px; }
+
+            /* Features */
+            .section-title h2 { font-size: 1.5rem; }
+            .feature-item-card { padding: 1.25rem; border-radius: 8px; }
+            .feature-icon-container { width: 40px; height: 40px; margin-bottom: 1rem; }
+            .feature-item-card h3 { font-size: 1.1rem; }
+            .feature-item-card p { font-size: 0.88rem; }
+
+            /* Downloads */
+            .download-platform-card { flex-direction: column; align-items: center; text-align: center; gap: 0.75rem; padding: 1.5rem 1rem; }
+            .platform-icon { width: 48px; height: 48px; margin-bottom: 0; }
+            .download-platform-card h3 { font-size: 1.1rem; }
+
+            /* FAQ */
+            .faq-question-btn { font-size: 0.85rem; padding: 0.875rem 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header / Navigation -->
+    <header class="site-header" id="site-header">
+        <div class="container header-wrap">
+            <a href="#" class="brand" id="header-brand-logo">
+                <img src="https://raw.githubusercontent.com/Cisco-Talos/clamav/main/logo.png" alt="ClamAV Logo">
+                <span>ClamAVClient</span>
+            </a>
+            <nav class="main-nav" id="header-nav-links">
+                <a href="#features">Fonctionnalités</a>
+                <a href="#demo">Démo Interactive</a>
+                <a href="#downloads">Téléchargements</a>
+                <a href="#docs">Documentation</a>
+                <a href="#faq">FAQ</a>
+            </nav>
+            <!-- Hamburger (mobile) -->
+            <button class="hamburger" id="hamburger-btn" aria-label="Menu" aria-expanded="false">
+                <span></span><span></span><span></span>
+            </button>
+            <div class="header-actions">
+                <a href="https://github.com/AnARCHIS12/ClamAVClient" class="btn btn-ghost" id="github-repo-link" target="_blank">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle;">
+                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                    </svg>
+                    GitHub
+                </a>
+                <a href="#downloads" class="btn btn-primary" id="header-btn-download">Télécharger</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Menu mobile -->
+    <nav class="mobile-menu" id="mobile-menu" role="navigation" aria-label="Menu mobile">
+        <a href="#features" id="mob-link-features">Fonctionnalites</a>
+        <a href="#demo" id="mob-link-demo">Demo Interactive</a>
+        <a href="#downloads" id="mob-link-downloads">Telechargements</a>
+        <a href="#docs" id="mob-link-docs">Documentation</a>
+        <a href="#faq" id="mob-link-faq">FAQ</a>
+        <a href="https://github.com/AnARCHIS12/ClamAVClient" target="_blank" class="btn btn-ghost" id="mob-link-github">GitHub</a>
+        <a href="#downloads" class="btn btn-primary" id="mob-link-dl">Telecharger</a>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section" id="hero">
+        <div class="container">
+            <div class="hero-badge" id="hero-status-badge">
+                <span style="display:inline-block; width:6px; height:6px; background-color:var(--accent); border-radius:50%; margin-right:4px;"></span>
+                <span id="hero-version-label">Chargement...</span>
+            </div>
+            <h1 id="landing-title">Antivirus Local ClamAV Client</h1>
+            <p class="hero-desc">
+                Une interface moderne, ultra-légère et intuitive pour sécuriser votre ordinateur avec le moteur de détection Cisco ClamAV. Protection en temps réel, quarantaine sécurisée et zéro configuration requise.
+            </p>
+            <div class="hero-actions-container">
+                <a href="#downloads" class="btn btn-primary" style="padding: 0.8rem 2rem; font-size: 1rem;" id="hero-cta-download">Télécharger Gratuitement</a>
+                <a href="#demo" class="btn btn-secondary" style="padding: 0.8rem 2rem; font-size: 1rem;" id="hero-cta-demo">Tester la Démo</a>
+            </div>
+            
+            <div class="tech-badges" id="tech-badges-row">
+                <div class="tech-badge-item">
+                    <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-4 6h-4v2h4v2h-4v2h4v2H9V7h6v2z"/></svg>
+                    Tauri & Rust Backend
+                </div>
+                <span class="dot-separator">•</span>
+                <div class="tech-badge-item">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                    Moteur Cisco ClamAV Embarqué
+                </div>
+                <span class="dot-separator">•</span>
+                <div class="tech-badge-item">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm4.59-12.42L10 14.17l-2.59-2.58L6 13l4 4 8-8z"/></svg>
+                    100% Open Source (MIT)
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Interactive Section -->
+    <section class="demo-section" id="demo">
+        <div class="container">
+            <div class="demo-title-container">
+                <h2>Démo Applicative Interactive</h2>
+                <p>Découvrez l'interface de l'application ClamAVClient directement depuis votre navigateur. Changez d'onglet et lancez un scan virtuel pour voir le moteur en action.</p>
+            </div>
+
+            <!-- App Mockup Frame -->
+            <div class="app-mockup" id="app-simulator-window">
+                
+                <!-- Windowbar -->
+                <div class="mock-windowbar">
+                    <div class="mock-windowbar-brand">
+                        <div class="mock-logo">
+                            <img src="https://raw.githubusercontent.com/Cisco-Talos/clamav/main/logo.png" alt="Logo ClamAV">
+                        </div>
+                        <strong>ClamAvClient</strong>
+                        <span>Protection locale ClamAV</span>
+                    </div>
+                    <div class="mock-windowbar-status">
+                        <div class="mock-status-chip">
+                            <span class="mock-dot pulse" id="sim-top-status-dot"></span>
+                            <span id="sim-top-status-text">Moteur opérationnel</span>
+                        </div>
+                        <span style="font-size: 0.75rem; color: var(--text-muted); display: inline-flex; align-items: center;" id="sim-top-privileges">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            Privilèges élevés (Root)
+                        </span>
+                    </div>
+                    <div class="mock-window-actions">
+                        <span class="mock-dot-win minimize"></span>
+                        <span class="mock-dot-win maximize"></span>
+                        <span class="mock-dot-win close"></span>
+                    </div>
+                </div>
+
+                <!-- Inner Layout -->
+                <div class="mock-layout">
+                    <!-- Sidebar -->
+                    <aside class="mock-sidebar">
+                        <div>
+                            <p class="mock-sidebar-label">Navigation</p>
+                            <nav class="mock-nav">
+                                <button class="mock-nav-btn active" id="sim-tab-dashboard" onclick="switchSimulatorTab('dashboard')">
+                                    <span class="num">01</span>
+                                    <span>Dashboard</span>
+                                </button>
+                                <button class="mock-nav-btn" id="sim-tab-scan" onclick="switchSimulatorTab('scan')">
+                                    <span class="num">02</span>
+                                    <span>Scan</span>
+                                </button>
+                                <button class="mock-nav-btn" id="sim-tab-quarantine" onclick="switchSimulatorTab('quarantine')">
+                                    <span class="num">03</span>
+                                    <span>Quarantaine</span>
+                                </button>
+                                <button class="mock-nav-btn" id="sim-tab-logs" onclick="switchSimulatorTab('logs')">
+                                    <span class="num">04</span>
+                                    <span>Logs</span>
+                                </button>
+                            </nav>
+                        </div>
+
+                        <div class="mock-sidebar-footer">
+                            <p class="mock-sidebar-label" style="margin-bottom: 0.35rem; padding-left: 0;">Temps réel</p>
+                            <div class="mock-sidebar-row">
+                                <span>Protection</span>
+                                <strong style="color: var(--success);" id="sim-rt-status">Active</strong>
+                            </div>
+                            <div class="mock-sidebar-row">
+                                <span>Clamd daemon</span>
+                                <strong style="color: var(--text-muted);" id="sim-daemon-status">Non utilisé</strong>
+                            </div>
+                        </div>
+                    </aside>
+
+                    <!-- Workspace -->
+                    <main class="mock-workspace">
+                        
+                        <!-- VIEW 1: Dashboard -->
+                        <div class="mock-view active" id="sim-view-dashboard">
+                            <div class="mock-view-header">
+                                <div>
+                                    <p style="font-size: 0.65rem; text-transform: uppercase; color: var(--accent); letter-spacing: 0.05em; font-weight: 600;">Vue d'ensemble</p>
+                                    <h3>Statut de la protection</h3>
+                                </div>
+                                <button class="btn btn-secondary btn-ghost" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="simulateSignatureUpdate()" id="sim-btn-update">Mettre à jour les signatures</button>
+                            </div>
+
+                            <div class="mock-status-grid">
+                                <div class="mock-card">
+                                    <span class="label">Moteur</span>
+                                    <strong>ClamAV 1.3.1</strong>
+                                </div>
+                                <div class="mock-card mock-card-accent">
+                                    <span class="label">Base de signatures</span>
+                                    <strong id="sim-signatures-count">8,692,410</strong>
+                                </div>
+                                <div class="mock-card">
+                                    <span class="label">Dossiers surveillés</span>
+                                    <strong id="sim-folders-count">3 dossiers</strong>
+                                </div>
+                                <div class="mock-card">
+                                    <span class="label">Quarantaine</span>
+                                    <strong id="sim-quarantine-badge" style="color: var(--accent);">2 menaces</strong>
+                                </div>
+                            </div>
+
+                            <div class="mock-dashboard-layout">
+                                <div class="mock-panel">
+                                    <div class="mock-panel-header">
+                                        <h4>Activité récente</h4>
+                                    </div>
+                                    <div class="mock-panel-body" id="sim-dashboard-recent">
+                                        <div class="mock-list-item">
+                                            <span>Scan rapide terminé</span>
+                                            <span style="color: var(--success);">Aucune menace</span>
+                                        </div>
+                                        <div class="mock-list-item">
+                                            <span>Mise à jour signatures</span>
+                                            <span style="color: var(--text-muted);">Il y a 2 heures</span>
+                                        </div>
+                                        <div class="mock-list-item">
+                                            <span>Alerte temps réel (Downloads)</span>
+                                            <span style="color: var(--accent); font-weight: 600;">Eicar.Virus détecté</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mock-panel">
+                                    <div class="mock-panel-header">
+                                        <h4>Configuration en temps réel</h4>
+                                    </div>
+                                    <div class="mock-panel-body">
+                                        <div class="mock-list-item">
+                                            <span>Scanner automatiquement Downloads</span>
+                                            <span style="color: var(--success); font-weight: 600;">OUI</span>
+                                        </div>
+                                        <div class="mock-list-item">
+                                            <span>Quarantaine automatique</span>
+                                            <span style="color: var(--success); font-weight: 600;">ACTIVE</span>
+                                        </div>
+                                        <div class="mock-list-item">
+                                            <span>Utiliser daemon clamdscan</span>
+                                            <span style="color: var(--text-muted);">NON (Moteur embarqué)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- VIEW 2: Scan -->
+                        <div class="mock-view" id="sim-view-scan">
+                            <div class="mock-view-header">
+                                <div>
+                                    <p style="font-size: 0.65rem; text-transform: uppercase; color: var(--accent); letter-spacing: 0.05em; font-weight: 600;">Analyse système</p>
+                                    <h3>Lancer une analyse antivirus</h3>
+                                </div>
+                                <button class="btn btn-primary" style="padding: 0.4rem 1rem; font-size: 0.8rem;" id="sim-scan-cta" onclick="toggleSimulatedScan()">Démarrer le scan</button>
+                            </div>
+
+                            <div class="mock-scan-layout">
+                                <div class="mock-mode-grid">
+                                    <div class="mock-mode-card active" id="sim-scan-mode-quick">
+                                        <h5>Scan rapide</h5>
+                                        <p>Desktop, Documents, Downloads et dossiers surveillés.</p>
+                                    </div>
+                                    <div class="mock-mode-card" id="sim-scan-mode-full">
+                                        <h5>Scan complet</h5>
+                                        <p>Analyse de la totalité du disque système (peut prendre du temps).</p>
+                                    </div>
+                                    <div class="mock-mode-card" id="sim-scan-mode-custom">
+                                        <h5>Scan personnalisé</h5>
+                                        <p>Sélectionnez manuellement un fichier ou dossier à analyser.</p>
+                                    </div>
+                                </div>
+
+                                <div class="mock-progress-container">
+                                    <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
+                                        <span id="sim-scan-progress-label">Statut : En attente</span>
+                                        <strong id="sim-scan-percentage">0%</strong>
+                                    </div>
+                                    <div class="mock-progress-bar">
+                                        <div class="mock-progress-fill" id="sim-scan-progress-fill"></div>
+                                    </div>
+                                    <div style="font-size:0.7rem; color:var(--text-secondary); min-height:16px;" id="sim-scan-current-file">Prêt pour l'analyse</div>
+                                    
+                                    <div class="mock-scan-terminal" id="sim-scan-terminal">
+                                        <div class="terminal-line" style="color:var(--text-muted)">-- ClamAVClient Virtual Scan Console v0.1.0 --</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- VIEW 3: Quarantine -->
+                        <div class="mock-view" id="sim-view-quarantine">
+                            <div class="mock-view-header">
+                                <div>
+                                    <p style="font-size: 0.65rem; text-transform: uppercase; color: var(--accent); letter-spacing: 0.05em; font-weight: 600;">Zone d'isolement</p>
+                                    <h3>Fichiers mis en quarantaine</h3>
+                                </div>
+                            </div>
+
+                            <div class="mock-panel" style="overflow-x: auto; min-height: 250px;">
+                                <table class="mock-quarantine-table" id="sim-quarantine-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Fichier</th>
+                                            <th>Menace détectée</th>
+                                            <th>Date d'isolement</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="sim-quarantine-body">
+                                        <tr id="q-row-1">
+                                            <td style="font-family:var(--font-mono); font-size:0.75rem;">/home/user/Downloads/eicar_com.zip</td>
+                                            <td><span style="color:var(--danger); font-weight:600;">Win.Test.Eicar_HSTR-1</span></td>
+                                            <td>Aujourd'hui, 15:42</td>
+                                            <td>
+                                                <button class="btn-table-action" onclick="restoreQuarantine('q-row-1')">Restaurer</button>
+                                                <button class="btn-table-action delete" onclick="deleteQuarantine('q-row-1')">Supprimer</button>
+                                            </td>
+                                        </tr>
+                                        <tr id="q-row-2">
+                                            <td style="font-family:var(--font-mono); font-size:0.75rem;">/home/user/Downloads/invoice_fake.pdf.exe</td>
+                                            <td><span style="color:var(--danger); font-weight:600;">Win.Trojan.Agent-12847</span></td>
+                                            <td>Hier, 11:20</td>
+                                            <td>
+                                                <button class="btn-table-action" onclick="restoreQuarantine('q-row-2')">Restaurer</button>
+                                                <button class="btn-table-action delete" onclick="deleteQuarantine('q-row-2')">Supprimer</button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <div id="sim-quarantine-empty" style="display:none; text-align:center; padding:3rem; color:var(--text-muted);">
+                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:1rem;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                                    <p>Aucune menace en quarantaine. Votre système est sain !</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- VIEW 4: Logs -->
+                        <div class="mock-view" id="sim-view-logs">
+                            <div class="mock-view-header">
+                                <div>
+                                    <p style="font-size: 0.65rem; text-transform: uppercase; color: var(--accent); letter-spacing: 0.05em; font-weight: 600;">Historique local</p>
+                                    <h3>Logs JSON des analyses</h3>
+                                </div>
+                            </div>
+
+                            <pre class="mock-logs-code"><code id="sim-logs-code">{
+  "history": [
+    {
+      "timestamp": "2026-06-25T15:42:01Z",
+      "event": "REALTIME_ALERT",
+      "path": "/home/user/Downloads/eicar_com.zip",
+      "threat": "Win.Test.Eicar_HSTR-1",
+      "action": "QUARANTINE_SUCCESS"
+    },
+    {
+      "timestamp": "2026-06-25T14:10:15Z",
+      "event": "SCAN_COMPLETE",
+      "mode": "QUICK",
+      "files_scanned": 14208,
+      "threats_found": 0,
+      "duration_seconds": 12.4
+    },
+    {
+      "timestamp": "2026-06-24T18:00:32Z",
+      "event": "SIGNATURES_UPDATE",
+      "previous_version": "8691012",
+      "new_version": "8692410",
+      "status": "SUCCESS"
+    }
+  ]
+}</code></pre>
+                        </div>
+                    </main>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Fonctionnalités Section -->
+    <section class="features-section" id="features">
+        <div class="container">
+            <div class="section-title">
+                <h2>Fonctionnalités Principales</h2>
+                <p>Découvrez comment ClamAVClient allie la puissance industrielle du moteur de détection ClamAV à une ergonomie moderne.</p>
+            </div>
+
+            <div class="features-grid">
+                <!-- Feature 1 -->
+                <div class="feature-item-card">
+                    <div class="feature-icon-container">
+                        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                    <h3>Protection Temps Réel</h3>
+                    <p>Surveillance active des répertoires sensibles. Tout fichier écrit ou modifié dans vos répertoires configurés est immédiatement analysé par le moteur.</p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="feature-item-card">
+                    <div class="feature-icon-container">
+                        <svg viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.2 8H17"/></svg>
+                    </div>
+                    <h3>Mises à Jour Automatiques</h3>
+                    <p>Mise à jour périodique des bases de signatures de virus Cisco Talos en tâche de fond. Votre protection est toujours armée contre les dernières menaces.</p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="feature-item-card">
+                    <div class="feature-icon-container">
+                        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
+                    </div>
+                    <h3>Quarantaine Sécurisée</h3>
+                    <p>Les fichiers infectés sont immédiatement déplacés et isolés dans une zone de quarantaine sécurisée cryptographique, évitant toute exécution accidentelle.</p>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="feature-item-card">
+                    <div class="feature-icon-container">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                    </div>
+                    <h3>Intégration clamd optionnelle</h3>
+                    <p>Basculez à tout moment vers un démon `clamd` local ou réseau pour diviser la durée de scan par 10 en conservant le moteur chargé en mémoire RAM.</p>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="feature-item-card">
+                    <div class="feature-icon-container">
+                        <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                    </div>
+                    <h3>Multi-Plateforme Natif</h3>
+                    <p>Compilé de manière native pour Windows (MSI), macOS (DMG Intel/M1/M2) et Linux (DEB, RPM et AppImage) grâce au framework ultra-léger Tauri.</p>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="feature-item-card">
+                    <div class="feature-icon-container">
+                        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    </div>
+                    <h3>Notifications Système</h3>
+                    <p>Alertes visuelles immédiates sur votre système d'exploitation dès qu'une menace est identifiée ou qu'une quarantaine automatique est effectuée.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section Téléchargements -->
+    <section class="download-section" id="downloads">
+        <div class="container">
+            <div class="section-title">
+                <h2>Télécharger ClamAVClient</h2>
+                <p>Sélectionnez le package natif adapté à votre système d'exploitation. Tous nos paquets intègrent directement la base de signatures initiale.</p>
+            </div>
+
+            <div class="download-cards-grid">
+                <!-- Windows -->
+                <div class="download-platform-card" id="download-card-windows">
+                    <div class="platform-icon">
+                        <svg viewBox="0 0 24 24" fill="#00A4EF">
+                            <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/>
+                        </svg>
+                    </div>
+                    <h3>Windows</h3>
+                    <p class="info">Installer MSI natif avec élévation de droits UAC automatique au lancement pour le scan système.</p>
+                    <a href="https://github.com/AnARCHIS12/ClamAVClient/releases/latest/download/ClamAvClient-setup.msi" class="btn btn-primary btn-download-action" id="win-download-link">Télécharger le MSI</a>
+                    <span class="meta-desc">Compatible Windows 10 / 11 (x64)</span>
+                </div>
+
+                <!-- macOS -->
+                <div class="download-platform-card" id="download-card-macos">
+                    <div class="platform-icon">
+                        <svg viewBox="0 0 24 24" fill="#ffffff">
+                            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-1 .04-2.22.67-2.94 1.5-.63.73-1.18 1.87-1.03 2.97 1.12.09 2.27-.58 2.98-1.41z"/>
+                        </svg>
+                    </div>
+                    <h3>macOS</h3>
+                    <p class="info">Image disque DMG contenant l'application avec configuration automatique du démon d'arrière-plan launchd.</p>
+                    <a href="https://github.com/AnARCHIS12/ClamAVClient/releases/latest/download/ClamAvClient.dmg" class="btn btn-primary btn-download-action" id="mac-download-link">Télécharger le DMG</a>
+                    <span class="meta-desc">Support macOS Intel & Apple Silicon (M1/M2/M3)</span>
+                </div>
+
+                <!-- Linux -->
+                <div class="download-platform-card" id="download-card-linux">
+                    <div class="platform-icon">
+                        <svg viewBox="0 0 24 24" fill="#FCC624" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 00-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.132 1.884 1.071.771-.06 1.592-.536 2.257-1.306.631-.765 1.683-1.084 2.378-1.503.348-.199.629-.469.649-.853.023-.4-.2-.811-.714-1.376v-.097l-.003-.003c-.17-.2-.25-.535-.338-.926-.085-.401-.182-.786-.492-1.046h-.003c-.059-.054-.123-.067-.188-.135a.357.357 0 00-.19-.064c.431-1.278.264-2.55-.173-3.694-.533-1.41-1.465-2.638-2.175-3.483-.796-1.005-1.576-1.957-1.56-3.368.026-2.152.236-6.133-3.544-6.139zm.529 3.405h.013c.213 0 .396.062.584.198.19.135.33.332.438.533.105.259.158.459.166.724 0-.02.006-.04.006-.06v.105a.086.086 0 01-.004-.021l-.004-.024a1.807 1.807 0 01-.15.706.953.953 0 01-.213.335.71.71 0 00-.088-.042c-.104-.045-.198-.064-.284-.133a1.312 1.312 0 00-.22-.066c.05-.06.146-.133.183-.198.053-.128.082-.264.088-.402v-.02a1.21 1.21 0 00-.061-.4c-.045-.134-.101-.2-.183-.333-.084-.066-.167-.132-.267-.132h-.016c-.093 0-.176.03-.262.132a.8.8 0 00-.205.334 1.18 1.18 0 00-.09.4v.019c.002.089.008.179.02.267-.193-.067-.438-.135-.607-.202a1.635 1.635 0 01-.018-.2v-.02a1.772 1.772 0 01.15-.768c.082-.22.232-.406.43-.533a.985.985 0 01.594-.2zm-2.962.059h.036c.142 0 .27.048.399.135.146.129.264.288.344.465.09.199.14.4.153.667v.004c.007.134.006.2-.002.266v.08c-.03.007-.056.018-.083.024-.152.055-.274.135-.393.2.012-.09.013-.18.003-.267v-.015c-.012-.133-.04-.2-.082-.333a.613.613 0 00-.166-.267.248.248 0 00-.183-.064h-.021c-.071.006-.13.04-.186.132a.552.552 0 00-.12.27.944.944 0 00-.023.33v.015c.012.135.037.2.08.334.046.134.098.2.166.268.01.009.02.018.034.024-.07.057-.117.07-.176.136a.304.304 0 01-.131.068 2.62 2.62 0 01-.275-.402 1.772 1.772 0 01-.155-.667 1.759 1.759 0 01.08-.668 1.43 1.43 0 01.283-.535c.128-.133.26-.2.418-.2zm1.37 1.706c.332 0 .733.065 1.216.399.293.2.523.269 1.052.468h.003c.255.136.405.266.478.399v-.131a.571.571 0 01.016.47c-.123.31-.516.643-1.063.842v.002c-.268.135-.501.333-.775.465-.276.135-.588.292-1.012.267a1.139 1.139 0 01-.448-.067 3.566 3.566 0 01-.322-.198c-.195-.135-.363-.332-.612-.465v-.005h-.008"/>
+                        </svg>
+                    </div>
+                    <h3>Linux</h3>
+                    <p class="info">Paquets natifs Debian/Ubuntu (DEB), Fedora/RHEL (RPM), et format universel portable AppImage autonome.</p>
+                    <div style="display:flex; flex-direction:column; gap:0.5rem; width:100%;" id="linux-download-options">
+                        <a href="https://github.com/AnARCHIS12/ClamAVClient/releases/latest/download/clamavclient.deb" class="btn btn-secondary" style="font-size:0.8rem; padding:0.4rem;" id="linux-deb-link">Télécharger .DEB</a>
+                        <a href="https://github.com/AnARCHIS12/ClamAVClient/releases/latest/download/ClamAvClient.AppImage" class="btn btn-secondary" style="font-size:0.8rem; padding:0.4rem;" id="linux-appimage-link">Télécharger .AppImage</a>
+                        <a href="https://github.com/AnARCHIS12/ClamAVClient/releases/latest/download/clamavclient.rpm" class="btn btn-secondary" style="font-size:0.8rem; padding:0.4rem;" id="linux-rpm-link">Télécharger .RPM</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section Documentation -->
+    <section class="docs-section" id="docs">
+        <div class="container">
+            <div class="section-title">
+                <h2>Documentation Technique</h2>
+                <p>Apprenez à installer, configurer et participer au développement du client léger de ClamAV.</p>
+            </div>
+
+            <div class="docs-container">
+                <!-- Sidebar docs -->
+                <aside class="docs-sidebar" id="docs-sidebar-navigation">
+                    <button class="docs-sidebar-btn active" id="docs-tab-install" onclick="switchDocsTab('install')">Installation rapide</button>
+                    <button class="docs-sidebar-btn" id="docs-tab-rights" onclick="switchDocsTab('rights')">Privilèges requis</button>
+                    <button class="docs-sidebar-btn" id="docs-tab-dev" onclick="switchDocsTab('dev')">Développement</button>
+                    <button class="docs-sidebar-btn" id="docs-tab-advanced" onclick="switchDocsTab('advanced')">Fonctions avancées</button>
+                </aside>
+
+                <!-- Contenu docs -->
+                <main class="docs-content" id="docs-tab-content-panel">
+                    
+                    <!-- TAB 1: Installation -->
+                    <div class="docs-panel active" id="docs-view-install">
+                        <h3>Installation pas à pas</h3>
+                        
+                        <h4>Windows</h4>
+                        <p>Téléchargez et exécutez le fichier d'installation <code>.msi</code>. Le programme installe le client et crée un raccourci de démarrage automatique configuré avec élévation UAC.</p>
+                        <pre><code># Si vous préférez installer via winget (prochainement disponible)
+winget install ClamAVClient</code></pre>
+
+                        <h4>macOS</h4>
+                        <p>Montez le fichier <code>.dmg</code> téléchargé, puis glissez l'icône de ClamAVClient dans votre dossier <code>Applications</code>. Au premier démarrage, l'application configurera un service <code>launchd</code> pour la mise à jour des signatures.</p>
+
+                        <h4>Linux (Debian / Ubuntu / Linux Mint)</h4>
+                        <p>Installez le fichier <code>.deb</code> avec dpkg puis corrigez les éventuelles dépendances manquantes avec apt.</p>
+                        <pre><code>sudo dpkg -i clamavclient.deb
+sudo apt-get install -f</code></pre>
+
+                        <h4>Linux (Fedora / RHEL / Rocky Linux)</h4>
+                        <pre><code>sudo rpm -i clamavclient.rpm</code></pre>
+
+                        <h4>Linux AppImage (Toutes distributions)</h4>
+                        <pre><code>chmod +x ClamAvClient.AppImage
+./ClamAvClient.AppImage</code></pre>
+                    </div>
+
+                    <!-- TAB 2: Droits administratifs -->
+                    <div class="docs-panel" id="docs-view-rights">
+                        <h3>Configuration des Privilèges</h3>
+                        <p>Pour être capable d'analyser l'intégralité du système de fichiers et de surveiller en temps réel l'ensemble des écritures, l'antivirus requiert des privilèges administratifs élevés :</p>
+                        
+                        <ul>
+                            <li><strong>Sous Windows</strong> : Le manifeste d'application généré par Tauri demande automatiquement le consentement UAC de l'administrateur à chaque ouverture de l'application.</li>
+                            <li><strong>Sous Linux / macOS</strong> : L'application vérifie son ID d'utilisateur au démarrage. Si l'application n'est pas lancée en tant que <code>root</code>, elle tente d'utiliser les agents d'authentification graphique de votre bureau (comme <code>pkexec</code> pour Polkit sur Linux, ou <code>osascript</code> sous macOS) pour réclamer l'élévation.</li>
+                        </ul>
+                        <p>Si aucun système d'élévation graphique n'est disponible ou si le consentement est rejeté, le client se fermera par mesure de sécurité.</p>
+                    </div>
+
+                    <!-- TAB 3: Développement -->
+                    <div class="docs-panel" id="docs-view-dev">
+                        <h3>Compiler le projet</h3>
+                        <p>ClamAVClient est écrit en Rust (backend Tauri) et en Javascript Vanilla (frontend). Pour le compiler localement, vous devez installer Node.js, Rust (via rustup), et le moteur ClamAV local.</p>
+
+                        <h4>1. Cloner le dépôt de code</h4>
+                        <pre><code>git clone https://github.com/AnARCHIS12/ClamAVClient.git
+cd ClamAVClient</code></pre>
+
+                        <h4>2. Installer les dépendances NPM</h4>
+                        <pre><code>npm install</code></pre>
+
+                        <h4>3. Préparer le runtime ClamAV embarqué</h4>
+                        <p>Cette étape télécharge ou copie les fichiers binaires requis par ClamAV sur votre système d'exploitation actuel pour les incorporer au bundle de l'application desktop.</p>
+                        <pre><code>npm run prepare:clamav</code></pre>
+
+                        <h4>4. Lancer le serveur de développement élevé</h4>
+                        <pre><code># Lance l'application avec les privilèges sudo/administrateur requis
+npm run dev:elevated</code></pre>
+
+                        <h4>5. Compiler l'application finale pour votre OS</h4>
+                        <pre><code>npm run build:desktop</code></pre>
+                    </div>
+
+                    <!-- TAB 4: Fonctions avancées -->
+                    <div class="docs-panel" id="docs-view-advanced">
+                        <h3>Fonctionnalités et variables avancées</h3>
+                        
+                        <h4>Option Daemon (clamd)</h4>
+                        <p>Par défaut, l'application charge le moteur de scan en mémoire à chaque analyse, ce qui est économe en RAM mais peut être lent à démarrer. En activant l'option <strong>clamd</strong> dans les configurations, l'application se connecte au démon résident système (souvent configuré sur le port 3310).</p>
+                        
+                        <h4>Structure des Logs d'analyse</h4>
+                        <p>Chaque scan consigne son rapport au format standardisé JSON dans le dossier de données de l'application :</p>
+                        <ul>
+                            <li><strong>Windows</strong> : <code>%APPDATA%/ClamAVClient/logs/</code></li>
+                            <li><strong>Linux</strong> : <code>~/.config/clamavclient/logs/</code></li>
+                            <li><strong>macOS</strong> : <code>~/Library/Application Support/ClamAVClient/logs/</code></li>
+                        </ul>
+                    </div>
+
+                </main>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq-section" id="faq">
+        <div class="container">
+            <div class="section-title">
+                <h2>Questions Fréquentes (FAQ)</h2>
+                <p>Tout ce que vous devez savoir sur ClamAVClient et le moteur de scan sous-jacent.</p>
+            </div>
+
+            <div class="faq-grid" id="faq-accordions-group">
+                <!-- FAQ 1 -->
+                <div class="faq-item" id="faq-item-1">
+                    <button class="faq-question-btn" onclick="toggleFaq(1)" id="faq-btn-1">
+                        <span>Puis-je utiliser ClamAVClient sans connexion Internet ?</span>
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div class="faq-answer" id="faq-ans-1">
+                        <div class="faq-answer-inner">
+                            Oui, ClamAVClient embarque une base de signatures initiale au moment de l'installation pour assurer une analyse hors-ligne. Cependant, pour récupérer les nouvelles signatures (mises à jour quotidiennes de la communauté et de Cisco Talos), une connexion Internet est nécessaire pour le service Freshclam.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ 2 -->
+                <div class="faq-item" id="faq-item-2">
+                    <button class="faq-question-btn" onclick="toggleFaq(2)" id="faq-btn-2">
+                        <span>Comment fonctionne la quarantaine de fichiers ?</span>
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div class="faq-answer" id="faq-ans-2">
+                        <div class="faq-answer-inner">
+                            Lorsqu'une menace est détectée, le fichier suspect est déplacé dans un dossier sécurisé géré par ClamAVClient. Il est privé de ses droits d'exécution d'origine pour empêcher tout lancement accidentel. Vous pouvez à tout moment restaurer le fichier à son emplacement d'origine ou le détruire définitivement via l'onglet Quarantaine.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ 3 -->
+                <div class="faq-item" id="faq-item-3">
+                    <button class="faq-question-btn" onclick="toggleFaq(3)" id="faq-btn-3">
+                        <span>Pourquoi l'application a-t-elle besoin des privilèges Administrateur / Root ?</span>
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div class="faq-answer" id="faq-ans-3">
+                        <div class="faq-answer-inner">
+                            Les antivirus ont besoin de parcourir des zones réservées du système d'exploitation (fichiers système, bibliothèques système partagées) pour débusquer les programmes malveillants. Sans droits élevés, l'antivirus serait incapable d'analyser ces dossiers critiques et de surveiller en temps réel l'écriture des fichiers par d'autres processus système.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ 4 -->
+                <div class="faq-item" id="faq-item-4">
+                    <button class="faq-question-btn" onclick="toggleFaq(4)" id="faq-btn-4">
+                        <span>Quelle est la différence entre le mode autonome et le mode clamd ?</span>
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div class="faq-answer" id="faq-ans-4">
+                        <div class="faq-answer-inner">
+                            En mode autonome, l'application charge en mémoire vive les 150 Mo de base de signatures de virus à chaque scan, ce qui libère la RAM après l'analyse mais ralentit le démarrage de celle-ci. En mode `clamd` (daemon), un processus d'arrière-plan conserve en permanence la base de signatures en mémoire vive. Les scans sont alors quasi instantanés, mais consomment environ 150 à 200 Mo de RAM résidente.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="container">
+            <a href="#" class="footer-logo" id="footer-brand-logo">
+                <img src="https://raw.githubusercontent.com/Cisco-Talos/clamav/main/logo.png" alt="Logo ClamAV">
+                <span>ClamAVClient</span>
+            </a>
+            <p class="footer-info">
+                ClamAVClient est un projet libre et open source indépendant. ClamAV® est une marque déposée de Cisco Systems, Inc. Le projet utilise le moteur officiel ClamAV et les bases de signatures de Cisco Talos.
+            </p>
+            <div class="footer-links" id="footer-navigation-links">
+                <a href="#features">Fonctionnalités</a>
+                <a href="#demo">Démo</a>
+                <a href="#downloads">Téléchargements</a>
+                <a href="#docs">Documentation</a>
+                <a href="https://github.com/AnARCHIS12/ClamAVClient/issues" target="_blank">Rapporter un bug</a>
+            </div>
+            <p class="footer-credits">
+                © 2026 ClamAVClient. Sous licence MIT. Propulsé par Tauri, Rust et ClamAV.
+            </p>
+        </div>
+    </footer>
+
+    <!-- Interactive Simulator Logic (Vanilla JS) -->
+    <script>
+        // Changement d'onglet du simulateur d'application
+        function switchSimulatorTab(tabName) {
+            // Désactiver tous les boutons d'onglets
+            const tabButtons = document.querySelectorAll('.mock-nav-btn');
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+
+            // Désactiver toutes les vues
+            const views = document.querySelectorAll('.mock-view');
+            views.forEach(view => view.classList.remove('active'));
+
+            // Activer l'onglet demandé
+            const targetBtn = document.getElementById(`sim-tab-${tabName}`);
+            const targetView = document.getElementById(`sim-view-${tabName}`);
+            
+            if (targetBtn && targetView) {
+                targetBtn.classList.add('active');
+                targetView.classList.add('active');
+            }
+        }
+
+        // Simulation de la mise à jour des signatures
+        function simulateSignatureUpdate() {
+            const btn = document.getElementById('sim-btn-update');
+            const counter = document.getElementById('sim-signatures-count');
+            
+            if (!btn || !counter) return;
+
+            btn.disabled = true;
+            btn.textContent = "Recherche en cours...";
+            
+            setTimeout(() => {
+                btn.textContent = "Téléchargement...";
+                setTimeout(() => {
+                    counter.textContent = "8,695,114";
+                    btn.textContent = "À jour !";
+                    
+                    // Ajouter l'événement à la liste récente
+                    const recentList = document.getElementById('sim-dashboard-recent');
+                    const newItem = document.createElement('div');
+                    newItem.className = 'mock-list-item';
+                    newItem.innerHTML = `
+                        <span>Mise à jour signatures (virtuelle)</span>
+                        <span style="color: var(--success); font-weight:600;">+2,704 bases</span>
+                    `;
+                    recentList.insertBefore(newItem, recentList.firstChild);
+                    
+                    setTimeout(() => {
+                        btn.disabled = false;
+                        btn.textContent = "Mettre à jour les signatures";
+                    }, 2000);
+                }, 1500);
+            }, 1000);
+        }
+
+        // Logique de simulation de scan
+        let isScanning = false;
+        let scanInterval = null;
+        let scanProgress = 0;
+        
+        const filesToScan = [
+            "/usr/bin/sudo", "/usr/bin/bash", "/etc/passwd", "/etc/shadow",
+            "/home/user/Documents/cv.pdf", "/home/user/Documents/report.docx",
+            "/home/user/Pictures/vacances.jpg", "/home/user/Downloads/setup.msi",
+            "/home/user/Downloads/invoice.pdf", "/home/user/Downloads/crack_key.exe",
+            "/lib/security/pam_unix.so", "/usr/share/nginx/html/index.html",
+            "/home/user/.ssh/id_rsa", "/home/user/.config/mimeapps.list",
+            "/usr/bin/clang", "/var/log/syslog", "/etc/hosts"
+        ];
+
+        function toggleSimulatedScan() {
+            const btn = document.getElementById('sim-scan-cta');
+            if (!btn) return;
+
+            if (isScanning) {
+                // Arrêter le scan
+                stopScanSimulator();
+            } else {
+                // Démarrer le scan
+                startScanSimulator();
+            }
+        }
+
+        function startScanSimulator() {
+            isScanning = true;
+            scanProgress = 0;
+            
+            const btn = document.getElementById('sim-scan-cta');
+            const progressFill = document.getElementById('sim-scan-progress-fill');
+            const percentageText = document.getElementById('sim-scan-percentage');
+            const statusLabel = document.getElementById('sim-scan-progress-label');
+            const currentFileText = document.getElementById('sim-scan-current-file');
+            const terminal = document.getElementById('sim-scan-terminal');
+
+            btn.textContent = "Annuler le scan";
+            btn.classList.add('btn-secondary');
+            btn.classList.remove('btn-primary');
+            statusLabel.textContent = "Statut : Analyse en cours...";
+
+            // Réinitialiser le terminal
+            terminal.innerHTML = '<div class="terminal-line" style="color:var(--text-muted)">[+] Initialisation du moteur ClamAV...</div>';
+
+            scanInterval = setInterval(() => {
+                scanProgress += Math.floor(Math.random() * 8) + 3;
+                if (scanProgress >= 100) {
+                    scanProgress = 100;
+                    stopScanSimulator(true);
+                }
+
+                // Mettre à jour la barre et les textes
+                progressFill.style.width = `${scanProgress}%`;
+                percentageText.textContent = `${scanProgress}%`;
+
+                // Sélectionner un fichier au hasard à afficher
+                const randomFile = filesToScan[Math.floor(Math.random() * filesToScan.length)];
+                currentFileText.textContent = `Analyse : ${randomFile}`;
+
+                // Écrire dans la console virtuelle
+                const line = document.createElement('div');
+                line.className = 'terminal-line';
+
+                // Générer une infection simulée à 55% pour le fun
+                if (scanProgress > 50 && scanProgress < 60 && !document.getElementById('sim-scanned-threat-found')) {
+                    line.className = 'terminal-line infected';
+                    line.id = 'sim-scanned-threat-found';
+                    line.textContent = `[WARN] /home/user/Downloads/trojan.exe: Win.Trojan.Agent-9984 DECOUVERTE`;
+                    
+                    // Ajouter à la quarantaine
+                    addSimulatedQuarantineRow("/home/user/Downloads/trojan.exe", "Win.Trojan.Agent-9984");
+                    
+                    // Alerte sonore ou vibration virtuelle (visuelle)
+                    const statusDot = document.getElementById('sim-top-status-dot');
+                    const statusText = document.getElementById('sim-top-status-text');
+                    statusDot.style.backgroundColor = 'var(--danger)';
+                    statusText.textContent = "Menace détectée !";
+                } else {
+                    line.textContent = `OK: ${randomFile}`;
+                }
+                
+                terminal.insertBefore(line, terminal.firstChild);
+
+            }, 250);
+        }
+
+        function stopScanSimulator(completed = false) {
+            isScanning = false;
+            clearInterval(scanInterval);
+
+            const btn = document.getElementById('sim-scan-cta');
+            const progressFill = document.getElementById('sim-scan-progress-fill');
+            const percentageText = document.getElementById('sim-scan-percentage');
+            const statusLabel = document.getElementById('sim-scan-progress-label');
+            const currentFileText = document.getElementById('sim-scan-current-file');
+            const terminal = document.getElementById('sim-scan-terminal');
+
+            btn.textContent = "Démarrer le scan";
+            btn.classList.remove('btn-secondary');
+            btn.classList.add('btn-primary');
+
+            if (completed) {
+                progressFill.style.width = '100%';
+                percentageText.textContent = '100%';
+                statusLabel.textContent = "Statut : Analyse terminée";
+                currentFileText.textContent = "Scan terminé avec succès.";
+                
+                const line = document.createElement('div');
+                line.className = 'terminal-line success';
+                
+                const threatFound = document.getElementById('sim-scanned-threat-found');
+                if (threatFound) {
+                    line.textContent = "[!] SCAN TERMINE : 1 menace trouvée et isolée.";
+                } else {
+                    line.textContent = "[+] SCAN TERMINE : Système sain. Aucune menace détectée.";
+                }
+                terminal.insertBefore(line, terminal.firstChild);
+            } else {
+                statusLabel.textContent = "Statut : Scan annulé";
+                currentFileText.textContent = "Scan arrêté par l'utilisateur.";
+                
+                const line = document.createElement('div');
+                line.className = 'terminal-line';
+                line.style.color = 'var(--warning)';
+                line.textContent = "[-] SCAN ANNULE PAR L'UTILISATEUR.";
+                terminal.insertBefore(line, terminal.firstChild);
+            }
+        }
+
+        // Ajouter une ligne de quarantaine simulée
+        function addSimulatedQuarantineRow(filePath, threatName) {
+            const tbody = document.getElementById('sim-quarantine-body');
+            const table = document.getElementById('sim-quarantine-table');
+            const emptyState = document.getElementById('sim-quarantine-empty');
+            const qBadge = document.getElementById('sim-quarantine-badge');
+            
+            if (!tbody) return;
+
+            const rowId = `q-row-sim-${Date.now()}`;
+            const tr = document.createElement('tr');
+            tr.id = rowId;
+            tr.innerHTML = `
+                <td style="font-family:var(--font-mono); font-size:0.75rem;">${filePath}</td>
+                <td><span style="color:var(--danger); font-weight:600;">${threatName}</span></td>
+                <td>À l'instant</td>
+                <td>
+                    <button class="btn-table-action" onclick="restoreQuarantine('${rowId}')">Restaurer</button>
+                    <button class="btn-table-action delete" onclick="deleteQuarantine('${rowId}')">Supprimer</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+
+            // Mettre à jour le compteur de quarantaine
+            updateQuarantineCounter();
+        }
+
+        // Actions de Quarantaine
+        function restoreQuarantine(rowId) {
+            const row = document.getElementById(rowId);
+            if (row) {
+                row.remove();
+                updateQuarantineCounter();
+                
+                // Si la ligne simulée a été restaurée, remettre le statut général au vert
+                if (document.querySelectorAll('#sim-quarantine-body tr').length === 0) {
+                    const statusDot = document.getElementById('sim-top-status-dot');
+                    const statusText = document.getElementById('sim-top-status-text');
+                    statusDot.style.backgroundColor = 'var(--success)';
+                    statusText.textContent = "Moteur opérationnel";
+                }
+            }
+        }
+
+        function deleteQuarantine(rowId) {
+            const row = document.getElementById(rowId);
+            if (row) {
+                row.remove();
+                updateQuarantineCounter();
+
+                // Si la ligne simulée a été détruite, remettre le statut au vert
+                if (document.querySelectorAll('#sim-quarantine-body tr').length === 0) {
+                    const statusDot = document.getElementById('sim-top-status-dot');
+                    const statusText = document.getElementById('sim-top-status-text');
+                    statusDot.style.backgroundColor = 'var(--success)';
+                    statusText.textContent = "Moteur opérationnel";
+                }
+            }
+        }
+
+        function updateQuarantineCounter() {
+            const tbody = document.getElementById('sim-quarantine-body');
+            const table = document.getElementById('sim-quarantine-table');
+            const emptyState = document.getElementById('sim-quarantine-empty');
+            const qBadge = document.getElementById('sim-quarantine-badge');
+
+            if (!tbody || !table || !emptyState || !qBadge) return;
+
+            const count = tbody.querySelectorAll('tr').length;
+            qBadge.textContent = count === 1 ? "1 menace" : `${count} menaces`;
+
+            if (count === 0) {
+                table.style.display = 'none';
+                emptyState.style.display = 'block';
+            } else {
+                table.style.display = 'table';
+                emptyState.style.display = 'none';
+            }
+        }
+
+        // Changement d'onglet de documentation
+        function switchDocsTab(tabName) {
+            const buttons = document.querySelectorAll('.docs-sidebar-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+
+            const panels = document.querySelectorAll('.docs-panel');
+            panels.forEach(p => p.classList.remove('active'));
+
+            const targetBtn = document.getElementById(`docs-tab-${tabName}`);
+            const targetPanel = document.getElementById(`docs-view-${tabName}`);
+
+            if (targetBtn && targetPanel) {
+                targetBtn.classList.add('active');
+                targetPanel.classList.add('active');
+            }
+        }
+
+        // Gestion de l'accordéon FAQ
+        function toggleFaq(index) {
+            const item = document.getElementById(`faq-item-${index}`);
+            if (!item) return;
+
+            const answer = item.querySelector('.faq-answer');
+            const isOpen = item.classList.contains('active');
+
+            // Fermer tous les autres accordéons
+            const allItems = document.querySelectorAll('.faq-item');
+            allItems.forEach(i => {
+                i.classList.remove('active');
+                i.querySelector('.faq-answer').style.maxHeight = null;
+            });
+
+            if (!isOpen) {
+                item.classList.add('active');
+                answer.style.maxHeight = answer.scrollHeight + "px";
+            }
+        }
+
+        // ==============================================================
+        // AUTO-UPDATE : Récupère la dernière release depuis l'API GitHub
+        // ==============================================================
+        // ============================================================
+        // HAMBURGER MENU (mobile)
+        // ============================================================
+        (function() {
+            const btn = document.getElementById('hamburger-btn');
+            const menu = document.getElementById('mobile-menu');
+            if (!btn || !menu) return;
+
+            function toggleMenu(force) {
+                const isOpen = typeof force === 'boolean' ? force : !btn.classList.contains('open');
+                btn.classList.toggle('open', isOpen);
+                menu.classList.toggle('open', isOpen);
+                btn.setAttribute('aria-expanded', String(isOpen));
+            }
+
+            btn.addEventListener('click', () => toggleMenu());
+
+            // Fermer au clic sur un lien du menu
+            menu.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => toggleMenu(false));
+            });
+
+            // Fermer si clic en dehors
+            document.addEventListener('click', (e) => {
+                if (!btn.contains(e.target) && !menu.contains(e.target)) {
+                    toggleMenu(false);
+                }
+            });
+        })();
+
+        (async function fetchLatestRelease() {
+            const REPO = 'AnARCHIS12/ClamAVClient';
+            const API_URL = `https://api.github.com/repos/${REPO}/releases/latest`;
+            const versionLabel = document.getElementById('hero-version-label');
+            const heroBadge = document.getElementById('hero-status-badge');
+
+            // Sélecteurs des boutons de téléchargement
+            const dlWin = document.getElementById('win-download-link');
+            const dlMac = document.getElementById('mac-download-link');
+            const dlDeb = document.getElementById('linux-deb-link');
+            const dlAppImage = document.getElementById('linux-appimage-link');
+            const dlRpm = document.getElementById('linux-rpm-link');
+
+            try {
+                const res = await fetch(API_URL, {
+                    headers: { 'Accept': 'application/vnd.github+json' }
+                });
+
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+                const data = await res.json();
+                const tag = data.tag_name || 'v0.1.0';
+                const version = tag.startsWith('v') ? tag : `v${tag}`;
+                const base = `https://github.com/${REPO}/releases/latest/download`;
+
+                // Mettre à jour le badge hero
+                if (versionLabel) versionLabel.textContent = `${version} disponible`;
+
+                // Mettre à jour les liens de téléchargement avec la bonne version
+                if (dlWin)      dlWin.href      = `${base}/ClamAvClient-setup.msi`;
+                if (dlMac)      dlMac.href      = `${base}/ClamAvClient.dmg`;
+                if (dlDeb)      dlDeb.href      = `${base}/clamavclient.deb`;
+                if (dlAppImage) dlAppImage.href = `${base}/ClamAvClient.AppImage`;
+                if (dlRpm)      dlRpm.href      = `${base}/clamavclient.rpm`;
+
+                // Ajouter un lien vers les release notes
+                if (data.html_url && heroBadge) {
+                    heroBadge.style.cursor = 'pointer';
+                    heroBadge.title = `Voir les notes de release ${version}`;
+                    heroBadge.onclick = () => window.open(data.html_url, '_blank');
+                }
+
+            } catch (err) {
+                // Fallback silencieux : on affiche la version statique
+                if (versionLabel) versionLabel.textContent = 'v0.1.0 disponible';
+                console.warn('[ClamAVClient] Impossible de récupérer la dernière release:', err.message);
+            }
+        })();
+    </script>
+</body>
+</html>

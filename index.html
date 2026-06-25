@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ClamAvClient</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script type="module" src="/src/main.js"></script>
+  </head>
+  <body>
+    <div class="app-frame">
+      <header class="windowbar" data-tauri-drag-region>
+        <div class="windowbar__brand">
+          <div class="brand-mark">
+            <img id="brand-logo" alt="Logo officiel ClamAV" />
+          </div>
+          <div class="windowbar__copy">
+            <strong>ClamAvClient</strong>
+            <span>Protection locale ClamAV</span>
+          </div>
+        </div>
+
+        <div class="windowbar__status">
+          <div class="status-chip">
+            <span class="status-dot" id="engine-dot"></span>
+            <span id="engine-status-label">Analyse du moteur...</span>
+          </div>
+          <span class="windowbar__meta" id="platform-label">Plateforme</span>
+          <span class="windowbar__meta" id="permission-label">Privilèges</span>
+        </div>
+      </header>
+
+      <div class="app-layout">
+        <aside class="sidebar">
+          <div class="sidebar__section">
+            <p class="sidebar__label">Navigation</p>
+            <nav class="nav">
+              <button class="nav__item nav__item--active" data-view="dashboard">
+                <span class="nav__index">01</span>
+                <span class="nav__text">Dashboard</span>
+              </button>
+              <button class="nav__item" data-view="scan">
+                <span class="nav__index">02</span>
+                <span class="nav__text">Scan</span>
+              </button>
+              <button class="nav__item" data-view="quarantine">
+                <span class="nav__index">03</span>
+                <span class="nav__text">Quarantaine</span>
+              </button>
+              <button class="nav__item" data-view="logs">
+                <span class="nav__index">04</span>
+                <span class="nav__text">Logs</span>
+              </button>
+            </nav>
+          </div>
+
+          <div class="sidebar__section sidebar__section--bottom">
+            <p class="sidebar__label">Temps reel</p>
+            <div class="side-panel">
+              <div class="side-panel__row">
+                <span>Etat</span>
+                <strong id="watcher-label">Protection inactive</strong>
+              </div>
+              <div class="side-panel__row">
+                <span>Moteur</span>
+                <strong id="topbar-engine-label">Initialisation...</strong>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <main class="workspace">
+          <section class="toolbar">
+            <div class="toolbar__titles">
+              <p class="toolbar__eyebrow" id="current-view-tag">Dashboard</p>
+              <h1 id="current-view-title">Vue d'ensemble de la protection</h1>
+              <p class="toolbar__description" id="current-view-description">
+                Suivez l'etat du moteur, les scans recents, la quarantaine et la protection
+                temps reel dans une interface plus compacte.
+              </p>
+            </div>
+
+            <div class="toolbar__actions">
+              <button class="button button--ghost" id="update-button">
+                Mettre a jour les signatures
+              </button>
+              <button class="button button--primary" id="quick-scan-button">Scan rapide</button>
+            </div>
+          </section>
+
+          <section class="view view--active" id="view-dashboard">
+            <div class="status-strip">
+              <article class="status-tile">
+                <span class="status-tile__label">Source moteur</span>
+                <strong id="overview-engine-source">ClamAV</strong>
+              </article>
+              <article class="status-tile">
+                <span class="status-tile__label">Privileges</span>
+                <strong id="overview-permission-level">Inconnu</strong>
+              </article>
+              <article class="status-tile">
+                <span class="status-tile__label">Plateforme</span>
+                <strong id="overview-platform">Inconnue</strong>
+              </article>
+              <article class="status-tile">
+                <span class="status-tile__label">Protection</span>
+                <strong id="overview-realtime-state">Inactive</strong>
+              </article>
+            </div>
+
+            <div class="cards-grid" id="dashboard-cards"></div>
+
+            <div class="dashboard-grid">
+              <article class="panel">
+                <div class="panel__header">
+                  <div>
+                    <p class="panel__eyebrow">Activite recente</p>
+                    <h3>Dernier scan</h3>
+                  </div>
+                </div>
+                <div id="last-scan-card" class="placeholder">
+                  Les informations du dernier scan apparaitront ici.
+                </div>
+              </article>
+
+              <article class="panel">
+                <div class="panel__header">
+                  <div>
+                    <p class="panel__eyebrow">Temps reel</p>
+                    <h3>Protection active</h3>
+                  </div>
+                  <button class="button button--ghost button--small" id="toggle-realtime-button">
+                    Activer
+                  </button>
+                </div>
+                <div id="realtime-card" class="stacked-list"></div>
+              </article>
+
+              <article class="panel panel--wide">
+                <div class="panel__header">
+                  <div>
+                    <p class="panel__eyebrow">Configuration</p>
+                    <h3>Dossiers surveilles</h3>
+                  </div>
+                  <button class="button button--ghost button--small" id="add-watch-folder-button">
+                    Ajouter un dossier
+                  </button>
+                </div>
+
+                <div class="settings-grid">
+                  <div class="settings-main">
+                    <div id="config-watch-paths" class="badge-list"></div>
+                    <div class="toggle-grid">
+                      <label class="toggle toggle--tile">
+                        <input type="checkbox" id="downloads-toggle" />
+                        <span>Scanner automatiquement Downloads</span>
+                      </label>
+                      <label class="toggle toggle--tile">
+                        <input type="checkbox" id="clamd-checkbox" />
+                        <span>Utiliser `clamdscan` si disponible</span>
+                      </label>
+                      <label class="toggle toggle--tile">
+                        <input type="checkbox" id="quarantine-checkbox" checked />
+                        <span>Quarantaine automatique</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div id="system-access-card" class="stacked-list"></div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="view" id="view-scan">
+            <div class="scan-grid">
+              <article class="panel">
+                <div class="panel__header">
+                  <div>
+                    <p class="panel__eyebrow">Mode</p>
+                    <h3>Lancer une analyse</h3>
+                  </div>
+                </div>
+
+                <div class="mode-grid">
+                  <button class="mode-card mode-card--active" data-mode="quick">
+                    <span class="mode-card__kicker">Rapide</span>
+                    <strong class="mode-card__title">Zones utilisateur</strong>
+                    <span class="mode-card__copy">Desktop, Documents, Downloads et dossiers surveilles</span>
+                  </button>
+                  <button class="mode-card" data-mode="full">
+                    <span class="mode-card__kicker">Complet</span>
+                    <strong class="mode-card__title">Volume systeme</strong>
+                    <span class="mode-card__copy">Inspection large du disque principal</span>
+                  </button>
+                  <button class="mode-card" data-mode="custom">
+                    <span class="mode-card__kicker">Personnalise</span>
+                    <strong class="mode-card__title">Fichier ou dossier</strong>
+                    <span class="mode-card__copy">Selection manuelle precise</span>
+                  </button>
+                </div>
+
+                <div class="controls">
+                  <div class="targets-box">
+                    <div class="targets-box__header">
+                      <span>Cibles selectionnees</span>
+                      <div class="actions-inline">
+                        <button class="button button--ghost button--small" id="pick-files-button">
+                          Fichiers
+                        </button>
+                        <button class="button button--ghost button--small" id="pick-folder-button">
+                          Dossier
+                        </button>
+                      </div>
+                    </div>
+                    <div id="selected-targets" class="placeholder">Aucune cible personnalisee.</div>
+                  </div>
+
+                  <button class="button button--primary" id="start-scan-button">Demarrer le scan</button>
+                </div>
+              </article>
+
+              <article class="panel">
+                <div class="panel__header">
+                  <div>
+                    <p class="panel__eyebrow">Execution</p>
+                    <h3>Progression</h3>
+                  </div>
+                </div>
+
+                <div class="progress-block">
+                  <div class="progress-block__label">
+                    <span id="scan-status-label">En attente</span>
+                    <span id="scan-progress-label">0%</span>
+                  </div>
+                  <div class="progress-bar">
+                    <span id="scan-progress-bar"></span>
+                  </div>
+                  <div id="scan-current-target" class="muted-line">Aucun scan en cours.</div>
+                </div>
+
+                <div id="scan-results" class="result-list">
+                  <div class="placeholder">Les fichiers infectes ou propres apparaitront ici apres un scan.</div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="view" id="view-quarantine">
+            <article class="panel">
+              <div class="panel__header">
+                <div>
+                  <p class="panel__eyebrow">Isolement</p>
+                  <h3>Fichiers en quarantaine</h3>
+                </div>
+              </div>
+              <div id="quarantine-list" class="result-list">
+                <div class="placeholder">Aucun fichier isole.</div>
+              </div>
+            </article>
+          </section>
+
+          <section class="view" id="view-logs">
+            <article class="panel">
+              <div class="panel__header">
+                <div>
+                  <p class="panel__eyebrow">Historique</p>
+                  <h3>Logs des scans</h3>
+                </div>
+              </div>
+              <div id="logs-list" class="result-list">
+                <div class="placeholder">Aucun log disponible.</div>
+              </div>
+            </article>
+          </section>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>
