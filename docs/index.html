@@ -1999,13 +1999,51 @@ sudo apt-get install -f</code></pre>
                     <!-- TAB 2: Droits administratifs -->
                     <div class="docs-panel" id="docs-view-rights">
                         <h3>Configuration des Privilèges</h3>
-                        <p>Pour être capable d'analyser l'intégralité du système de fichiers et de surveiller en temps réel l'ensemble des écritures, l'antivirus requiert des privilèges administratifs élevés :</p>
-                        
+                        <p>Pour analyser l'intégralité du système de fichiers et surveiller en temps réel les écritures, l'application requiert des droits élevés selon la plateforme.</p>
+
+                        <h4>🪟 Windows</h4>
+                        <p>L'installateur MSI déclenche automatiquement la boîte de dialogue <strong>UAC</strong> (Contrôle de compte d'utilisateur). Il suffit de cliquer sur <em>Oui</em>. Aucune commande supplémentaire n'est nécessaire.</p>
+
+                        <h4>🐧 Linux — méthode recommandée (interface graphique)</h4>
+                        <p>Utilisez <code>pkexec</code> pour déclencher une boîte de dialogue graphique de demande de mot de passe :</p>
+                        <pre><code>pkexec clamavclient</code></pre>
+                        <p>Si <code>pkexec</code> n'est pas disponible, vous pouvez lancer l'application directement avec <code>sudo</code> depuis un terminal :</p>
+                        <pre><code>sudo clamavclient
+# ou, si installé via AppImage :
+sudo ./ClamAvClient.AppImage</code></pre>
+
+                        <h4>🐧 Linux — cas particulier Wayland (GNOME / Fedora)</h4>
+                        <p>Sur Wayland, <code>sudo</code> seul peut bloquer l'affichage graphique. Transmettez la variable d'affichage :</p>
+                        <pre><code># Wayland
+sudo --preserve-env=WAYLAND_DISPLAY,XDG_RUNTIME_DIR clamavclient
+
+# X11 (fallback)
+sudo DISPLAY=$DISPLAY clamavclient</code></pre>
+
+                        <h4>🐧 Linux — scan sans ouvrir l'interface (terminal pur)</h4>
+                        <p>Si vous n'avez pas d'environnement graphique, vous pouvez utiliser directement le moteur ClamAV :</p>
+                        <pre><code># Scan rapide du dossier personnel
+sudo clamscan --recursive --infected ~/
+
+# Scan complet du système (peut prendre plusieurs heures)
+sudo clamscan --recursive --infected /
+
+# Avec le daemon clamd (plus rapide)
+sudo clamdscan --multiscan /home</code></pre>
+
+                        <h4>🍎 macOS</h4>
+                        <p>Montez le <code>.dmg</code> et glissez l'application dans <code>/Applications</code>. Au premier lancement, macOS demandera une autorisation via la boîte de dialogue système. Pour les scans système complets :</p>
+                        <pre><code>sudo /Applications/ClamAvClient.app/Contents/MacOS/ClamAvClient</code></pre>
+                        <p>Sur macOS, accordez aussi l'<strong>Accès complet au disque</strong> dans <em>Réglages Système → Confidentialité et sécurité → Accès complet au disque</em>.</p>
+
+                        <h4>⚠️ Note sur le mode standard (sans élévation)</h4>
+                        <p>L'application fonctionne <strong>aussi sans droits root</strong> en mode utilisateur standard. Dans ce cas :</p>
                         <ul>
-                            <li><strong>Sous Windows</strong> : Le manifeste d'application généré par Tauri demande automatiquement le consentement UAC de l'administrateur à chaque ouverture de l'application.</li>
-                            <li><strong>Sous Linux / macOS</strong> : L'application vérifie son ID d'utilisateur au démarrage. Si l'application n'est pas lancée en tant que <code>root</code>, elle tente d'utiliser les agents d'authentification graphique de votre bureau (comme <code>pkexec</code> pour Polkit sur Linux, ou <code>osascript</code> sous macOS) pour réclamer l'élévation.</li>
+                            <li>✅ Scan de votre dossier personnel (<code>~</code>) : disponible</li>
+                            <li>✅ Protection temps réel sur vos téléchargements : disponible</li>
+                            <li>⚠️ Scan des dossiers système (<code>/etc</code>, <code>/usr</code>, <code>/bin</code>...) : accès refusé sur certains fichiers (comptés dans les erreurs)</li>
+                            <li>❌ Scan complet du système : résultats partiels sans droits root</li>
                         </ul>
-                        <p>Si aucun système d'élévation graphique n'est disponible ou si le consentement est rejeté, le client se fermera par mesure de sécurité.</p>
                     </div>
 
                     <!-- TAB 3: Développement -->
