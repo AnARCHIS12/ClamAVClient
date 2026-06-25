@@ -1,6 +1,6 @@
 [package]
 name = "clamavclient"
-version = "0.1.0"
+version = "0.2.0"
 description = "ClamAvClient, client ClamAV multi-plateforme avec Tauri"
 authors = ["OpenAI Codex"]
 edition = "2021"
