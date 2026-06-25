@@ -17,7 +17,9 @@ use anyhow::Result;
 use models::AppConfig;
 use storage::read_app_config;
 use storage::StoragePaths;
-use tauri::Manager;
+use tauri::menu::{Menu, MenuItem};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+use tauri::{Manager, WebviewWindow};
 use watcher::RealtimeProtection;
 use auto_update::AutoUpdate;
 
@@ -44,6 +46,13 @@ impl AppState {
     }
 }
 
+/// Affiche la fenêtre principale et la met au premier plan.
+fn show_window(window: &WebviewWindow) {
+    let _ = window.show();
+    let _ = window.unminimize();
+    let _ = window.set_focus();
+}
+
 fn main() {
     #[cfg(target_os = "linux")]
     std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
@@ -53,7 +62,7 @@ fn main() {
         .plugin(tauri_plugin_notification::init())
         .setup(|app| {
             let handle = app.handle().clone();
-            let state = AppState::bootstrap(handle)?;
+            let state = AppState::bootstrap(handle.clone())?;
 
             let config = state.config.lock().unwrap().clone();
 
@@ -77,7 +86,86 @@ fn main() {
 
             app.manage(state);
 
+            // ── System Tray ──────────────────────────────────────────────────
+            let open_item = MenuItem::with_id(app, "open", "Ouvrir ClamAVClient", true, None::<&str>)?;
+            let toggle_item = MenuItem::with_id(app, "toggle_rt", "Protection temps réel : ON/OFF", true, None::<&str>)?;
+            let quit_item  = MenuItem::with_id(app, "quit", "Quitter", true, None::<&str>)?;
+
+            let menu = Menu::with_items(app, &[&open_item, &toggle_item, &quit_item])?;
+
+            let _tray = TrayIconBuilder::with_id("main-tray")
+                .icon(app.default_window_icon().unwrap().clone())
+                .tooltip("ClamAVClient — Protection active")
+                .menu(&menu)
+                .show_menu_on_left_click(false)
+                .on_menu_event({
+                    let handle = handle.clone();
+                    move |_tray, event| {
+                        let window = handle.get_webview_window("main");
+                        match event.id().as_ref() {
+                            "open" => {
+                                if let Some(w) = window {
+                                    show_window(&w);
+                                }
+                            }
+                            "toggle_rt" => {
+                                // Déléguer à la commande Tauri existante via état partagé
+                                if let Some(state) = handle.try_state::<AppState>() {
+                                    let mut guard = state.realtime.lock().unwrap();
+                                    if guard.is_some() {
+                                        *guard = None; // stoppe la protection
+                                    } else {
+                                        let cfg = state.config.lock().unwrap().clone();
+                                        if let Ok(rt) = RealtimeProtection::start(
+                                            handle.clone(),
+                                            state.storage.clone(),
+                                            cfg,
+                                        ) {
+                                            *guard = Some(rt);
+                                        }
+                                    }
+                                }
+                            }
+                            "quit" => {
+                                handle.exit(0);
+                            }
+                            _ => {}
+                        }
+                    }
+                })
+                .on_tray_icon_event({
+                    let handle = handle.clone();
+                    move |_tray, event| {
+                        // Clic gauche → afficher/masquer la fenêtre
+                        if let TrayIconEvent::Click {
+                            button: MouseButton::Left,
+                            button_state: MouseButtonState::Up,
+                            ..
+                        } = event
+                        {
+                            if let Some(window) = handle.get_webview_window("main") {
+                                if window.is_visible().unwrap_or(false) {
+                                    let _ = window.hide();
+                                } else {
+                                    show_window(&window);
+                                }
+                            }
+                        }
+                    }
+                })
+                .build(app)?;
+
+            // ── Fenêtre principale ───────────────────────────────────────────
             if let Some(window) = app.get_webview_window("main") {
+                // Intercepter la fermeture : masquer au lieu de quitter
+                let win_clone = window.clone();
+                window.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                        api.prevent_close();
+                        let _ = win_clone.hide();
+                    }
+                });
+
                 let _ = window.show();
                 let _ = window.set_focus();
             }
