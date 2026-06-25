@@ -1915,7 +1915,7 @@
                     </div>
                     <h3>Windows</h3>
                     <p class="info">Installer MSI natif avec élévation de droits UAC automatique au lancement pour le scan système.</p>
-                    <a href="https://github.com/AnARCHIS12/ClamAVClient/releases/latest/download/ClamAvClient-setup.msi" class="btn btn-primary btn-download-action" id="win-download-link">Télécharger le MSI</a>
+                    <a href="https://github.com/AnARCHIS12/ClamAVClient/releases/latest/download/ClamAvClient_0.1.0_x64_fr-FR.msi" class="btn btn-primary btn-download-action" id="win-download-link">Télécharger le MSI</a>
                     <span class="meta-desc">Compatible Windows 10 / 11 (x64)</span>
                 </div>
 
@@ -1928,7 +1928,7 @@
                     </div>
                     <h3>macOS</h3>
                     <p class="info">Image disque DMG contenant l'application avec configuration automatique du démon d'arrière-plan launchd.</p>
-                    <a href="https://github.com/AnARCHIS12/ClamAVClient/releases/latest/download/ClamAvClient.dmg" class="btn btn-primary btn-download-action" id="mac-download-link">Télécharger le DMG</a>
+                    <a href="https://github.com/AnARCHIS12/ClamAVClient/releases/latest/download/ClamAvClient_0.1.0_x64.dmg" class="btn btn-primary btn-download-action" id="mac-download-link">Télécharger le DMG</a>
                     <span class="meta-desc">Support macOS Intel & Apple Silicon (M1/M2/M3)</span>
                 </div>
 
@@ -1942,9 +1942,9 @@
                     <h3>Linux</h3>
                     <p class="info">Paquets natifs Debian/Ubuntu (DEB), Fedora/RHEL (RPM), et format universel portable AppImage autonome.</p>
                     <div style="display:flex; flex-direction:column; gap:0.5rem; width:100%;" id="linux-download-options">
-                        <a href="https://github.com/AnARCHIS12/ClamAVClient/releases/latest/download/clamavclient.deb" class="btn btn-secondary" style="font-size:0.8rem; padding:0.4rem;" id="linux-deb-link">Télécharger .DEB</a>
-                        <a href="https://github.com/AnARCHIS12/ClamAVClient/releases/latest/download/ClamAvClient.AppImage" class="btn btn-secondary" style="font-size:0.8rem; padding:0.4rem;" id="linux-appimage-link">Télécharger .AppImage</a>
-                        <a href="https://github.com/AnARCHIS12/ClamAVClient/releases/latest/download/clamavclient.rpm" class="btn btn-secondary" style="font-size:0.8rem; padding:0.4rem;" id="linux-rpm-link">Télécharger .RPM</a>
+                        <a href="https://github.com/AnARCHIS12/ClamAVClient/releases/latest/download/ClamAvClient_0.1.0_amd64.deb" class="btn btn-secondary" style="font-size:0.8rem; padding:0.4rem;" id="linux-deb-link">Télécharger .DEB</a>
+                        <a href="https://github.com/AnARCHIS12/ClamAVClient/releases/latest/download/ClamAvClient_0.1.0_amd64.AppImage" class="btn btn-secondary" style="font-size:0.8rem; padding:0.4rem;" id="linux-appimage-link">Télécharger .AppImage</a>
+                        <a href="https://github.com/AnARCHIS12/ClamAVClient/releases/latest/download/ClamAvClient-0.1.0-1.x86_64.rpm" class="btn btn-secondary" style="font-size:0.8rem; padding:0.4rem;" id="linux-rpm-link">Télécharger .RPM</a>
                     </div>
                 </div>
             </div>
@@ -2507,12 +2507,21 @@ npm run dev:elevated</code></pre>
                 // Mettre à jour le badge hero
                 if (versionLabel) versionLabel.textContent = `${version} disponible`;
 
-                // Mettre à jour les liens de téléchargement avec la bonne version
-                if (dlWin)      dlWin.href      = `${base}/ClamAvClient-setup.msi`;
-                if (dlMac)      dlMac.href      = `${base}/ClamAvClient.dmg`;
-                if (dlDeb)      dlDeb.href      = `${base}/clamavclient.deb`;
-                if (dlAppImage) dlAppImage.href = `${base}/ClamAvClient.AppImage`;
-                if (dlRpm)      dlRpm.href      = `${base}/clamavclient.rpm`;
+                // Mettre à jour les liens de téléchargement de manière dynamique à partir des assets
+                const assets = data.assets || [];
+                const winAsset = assets.find(a => a.name.toLowerCase().endsWith('.msi') && a.name.toLowerCase().includes('clamavclient'));
+                const macAsset = assets.find(a => a.name.toLowerCase().endsWith('.dmg') && a.name.toLowerCase().includes('clamavclient'));
+                const debAsset = assets.find(a => a.name.toLowerCase().endsWith('.deb') && a.name.toLowerCase().includes('clamavclient'));
+                const appImageAsset = assets.find(a => a.name.toLowerCase().endsWith('.appimage') && a.name.toLowerCase().includes('clamavclient'));
+                const rpmAsset = assets.find(a => a.name.toLowerCase().endsWith('.rpm') && a.name.toLowerCase().includes('clamavclient'));
+
+                const rawVersion = tag.replace(/^v/, '');
+
+                if (dlWin)      dlWin.href      = winAsset ? winAsset.browser_download_url : `${base}/ClamAvClient_${rawVersion}_x64_fr-FR.msi`;
+                if (dlMac)      dlMac.href      = macAsset ? macAsset.browser_download_url : `${base}/ClamAvClient_${rawVersion}_x64.dmg`;
+                if (dlDeb)      dlDeb.href      = debAsset ? debAsset.browser_download_url : `${base}/ClamAvClient_${rawVersion}_amd64.deb`;
+                if (dlAppImage) dlAppImage.href = appImageAsset ? appImageAsset.browser_download_url : `${base}/ClamAvClient_${rawVersion}_amd64.AppImage`;
+                if (dlRpm)      dlRpm.href      = rpmAsset ? rpmAsset.browser_download_url : `${base}/ClamAvClient-${rawVersion}-1.x86_64.rpm`;
 
                 // Ajouter un lien vers les release notes
                 if (data.html_url && heroBadge) {
