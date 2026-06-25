@@ -9,7 +9,7 @@ use tauri::{AppHandle, Emitter};
 
 use crate::clamav;
 use crate::models::UpdateReport;
-use crate::storage::{append_update_history, StoragePaths};
+use crate::storage::StoragePaths;
 
 pub struct AutoUpdate {
     stop_signal: Arc<AtomicBool>,
