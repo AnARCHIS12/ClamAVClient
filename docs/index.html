@@ -1544,23 +1544,29 @@
     <!-- Hero Section -->
     <section class="hero-section" id="hero">
         <div class="container">
-            <div class="hero-badge" id="hero-status-badge">
-                <span style="display:inline-block; width:6px; height:6px; background-color:var(--accent); border-radius:50%; margin-right:4px;"></span>
-                <span id="hero-version-label">Chargement...</span>
+            <div style="display:flex; justify-content:center; gap:0.75rem; flex-wrap:wrap; margin-bottom:1.5rem;">
+                <div class="hero-badge" id="hero-status-badge">
+                    <span style="display:inline-block; width:6px; height:6px; background-color:var(--accent); border-radius:50%; margin-right:4px;"></span>
+                    <span id="hero-version-label">Chargement...</span>
+                </div>
+                <div class="hero-badge" style="background:rgba(16,185,129,0.1); border-color:rgba(16,185,129,0.25); color:#10b981;">
+                    <span style="display:inline-block; width:6px; height:6px; background-color:#10b981; border-radius:50%; margin-right:4px;"></span>
+                    100% Gratuit &amp; Open Source
+                </div>
             </div>
             <h1 id="landing-title">Antivirus Local ClamAV Client</h1>
             <p class="hero-desc">
-                Une interface moderne, ultra-légère et intuitive pour sécuriser votre ordinateur avec le moteur de détection Cisco ClamAV. Protection en temps réel, quarantaine sécurisée et zéro configuration requise.
+                Une interface moderne, ultra-légère et intuitive pour sécuriser votre ordinateur avec le moteur de détection Cisco ClamAV. Protection en temps réel, quarantaine sécurisée et &mdash; <strong>entièrement gratuit, sans abonnement, sans publicité</strong>.
             </p>
             <div class="hero-actions-container">
-                <a href="#downloads" class="btn btn-primary" style="padding: 0.8rem 2rem; font-size: 1rem;" id="hero-cta-download">Télécharger Gratuitement</a>
+                <a href="#downloads" class="btn btn-primary" style="padding: 0.8rem 2rem; font-size: 1rem;" id="hero-cta-download">Télécharger &mdash; Gratuit</a>
                 <a href="#demo" class="btn btn-secondary" style="padding: 0.8rem 2rem; font-size: 1rem;" id="hero-cta-demo">Tester la Démo</a>
             </div>
             
             <div class="tech-badges" id="tech-badges-row">
                 <div class="tech-badge-item">
                     <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-4 6h-4v2h4v2h-4v2h4v2H9V7h6v2z"/></svg>
-                    Tauri & Rust Backend
+                    Tauri &amp; Rust Backend
                 </div>
                 <span class="dot-separator">•</span>
                 <div class="tech-badge-item">
@@ -1570,7 +1576,12 @@
                 <span class="dot-separator">•</span>
                 <div class="tech-badge-item">
                     <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm4.59-12.42L10 14.17l-2.59-2.58L6 13l4 4 8-8z"/></svg>
-                    100% Open Source (MIT)
+                    100% Open Source &mdash; Licence MIT
+                </div>
+                <span class="dot-separator">•</span>
+                <div class="tech-badge-item" style="color: #10b981;">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    Gratuit, sans abonnement
                 </div>
             </div>
         </div>
@@ -1931,6 +1942,10 @@
             <div class="section-title">
                 <h2>Télécharger ClamAVClient</h2>
                 <p>Sélectionnez le package natif adapté à votre système d'exploitation. Tous nos paquets intègrent directement la base de signatures initiale.</p>
+                <p style="margin-top:0.75rem; display:inline-flex; align-items:center; gap:0.5rem; background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.2); color:#10b981; padding:0.45rem 1rem; border-radius:99px; font-size:0.875rem; font-weight:600;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    Entièrement gratuit &mdash; aucun abonnement, aucune publicité, aucune limite
+                </p>
             </div>
 
             <div class="download-cards-grid">
