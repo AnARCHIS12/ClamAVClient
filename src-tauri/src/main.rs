@@ -1,3 +1,7 @@
+// Empêche l'ouverture d'une fenêtre terminal (console) au démarrage sur Windows.
+// Sans cette directive, Windows ouvre une fenêtre cmd noire derrière l'application.
+#![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
+
 mod auto_update;
 mod clamav;
 mod commands;
