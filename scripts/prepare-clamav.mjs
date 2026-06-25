@@ -19,7 +19,6 @@ if (!currentPlatform) {
   process.exit(1);
 }
 
-const spec = buildPlatformSpec(currentPlatform);
 const destination = {
   root: path.join(vendorRoot, currentPlatform),
   bin: path.join(vendorRoot, currentPlatform, "bin"),
@@ -29,6 +28,7 @@ const destination = {
 fs.mkdirSync(destination.bin, { recursive: true });
 fs.mkdirSync(destination.db, { recursive: true });
 
+const spec = buildPlatformSpec(currentPlatform, destination);
 const resolvedBinDir = firstMatchingBinDir(spec.binCandidates, spec.requiredBins);
 const resolvedDbDir = firstMatchingDbDir(spec.dbCandidates);
 
@@ -66,20 +66,27 @@ console.log(`Base source: ${resolvedDbDir ?? "telechargee via freshclam"}`);
 console.log(`Binaires copies: ${copiedBins.join(", ")}`);
 console.log(`Signatures copiees: ${copiedDb.join(", ")}`);
 
-function buildPlatformSpec(platform) {
+function buildPlatformSpec(platform, destination) {
+  const linuxDbFallback = path.join(vendorRoot, "linux", "db");
+  const currentDbFallback = destination.db;
+  const currentBinFallback = destination.bin;
+
   if (platform === "linux") {
     return {
       binCandidates: compact([
         process.env.CLAMAV_BIN_DIR,
         withJoin(process.env.CLAMAV_SOURCE_ROOT, "bin"),
+        currentBinFallback,
         "/usr/local/bin",
         "/usr/bin"
       ]),
       dbCandidates: compact([
         process.env.CLAMAV_DB_DIR,
         withJoin(process.env.CLAMAV_SOURCE_ROOT, "share", "clamav"),
+        currentDbFallback,
         "/usr/local/share/clamav",
-        "/var/lib/clamav"
+        "/var/lib/clamav",
+        linuxDbFallback
       ]),
       requiredBins: ["clamscan", "freshclam"],
       optionalBins: ["clamdscan", "clamd"]
@@ -91,6 +98,7 @@ function buildPlatformSpec(platform) {
       binCandidates: compact([
         process.env.CLAMAV_BIN_DIR,
         withJoin(process.env.CLAMAV_SOURCE_ROOT, "bin"),
+        currentBinFallback,
         "/usr/local/clamav/bin",
         "/usr/local/bin",
         "/opt/homebrew/bin"
@@ -98,9 +106,11 @@ function buildPlatformSpec(platform) {
       dbCandidates: compact([
         process.env.CLAMAV_DB_DIR,
         withJoin(process.env.CLAMAV_SOURCE_ROOT, "share", "clamav"),
+        currentDbFallback,
         "/usr/local/clamav/share/clamav",
         "/usr/local/var/lib/clamav",
-        "/opt/homebrew/var/lib/clamav"
+        "/opt/homebrew/var/lib/clamav",
+        linuxDbFallback
       ]),
       requiredBins: ["clamscan", "freshclam"],
       optionalBins: ["clamdscan", "clamd"]
@@ -111,6 +121,7 @@ function buildPlatformSpec(platform) {
     binCandidates: compact([
       process.env.CLAMAV_BIN_DIR,
       process.env.CLAMAV_SOURCE_ROOT,
+      currentBinFallback,
       "C:\\Program Files\\ClamAV",
       "C:\\Program Files (x86)\\ClamAV"
     ]),
@@ -118,8 +129,10 @@ function buildPlatformSpec(platform) {
       process.env.CLAMAV_DB_DIR,
       withJoin(process.env.CLAMAV_SOURCE_ROOT, "database"),
       withJoin(process.env.CLAMAV_SOURCE_ROOT, "db"),
+      currentDbFallback,
       "C:\\ProgramData\\.clamwin\\db",
-      "C:\\Program Files\\ClamAV\\Database"
+      "C:\\Program Files\\ClamAV\\Database",
+      linuxDbFallback
     ]),
     requiredBins: ["clamscan.exe", "freshclam.exe"],
     optionalBins: ["clamdscan.exe", "clamd.exe", "libclamav.dll", "libcrypto-3-x64.dll", "libssl-3-x64.dll", "zlib1.dll", "libxml2.dll", "pcre2-8.dll", "iconv.dll"]
@@ -164,6 +177,7 @@ function firstMatchingDbDir(candidates) {
 
 function copyRequiredFiles(sourceDir, targetDir, required, optional) {
   const copied = [];
+  const sameDir = path.resolve(sourceDir) === path.resolve(targetDir);
 
   for (const fileName of required) {
     const source = path.join(sourceDir, fileName);
@@ -173,7 +187,9 @@ function copyRequiredFiles(sourceDir, targetDir, required, optional) {
     }
 
     const target = path.join(targetDir, fileName);
-    fs.copyFileSync(source, target);
+    if (!sameDir) {
+      fs.copyFileSync(source, target);
+    }
     copied.push(fileName);
   }
 
@@ -184,7 +200,9 @@ function copyRequiredFiles(sourceDir, targetDir, required, optional) {
     }
 
     const target = path.join(targetDir, fileName);
-    fs.copyFileSync(source, target);
+    if (!sameDir) {
+      fs.copyFileSync(source, target);
+    }
     copied.push(fileName);
   }
 
@@ -193,6 +211,7 @@ function copyRequiredFiles(sourceDir, targetDir, required, optional) {
 
 function copySignatureDb(sourceDir, targetDir) {
   const copied = [];
+  const sameDir = path.resolve(sourceDir) === path.resolve(targetDir);
   const allowedExtensions = new Set([".cvd", ".cld", ".cdiff"]);
   const entries = fs.readdirSync(sourceDir, { withFileTypes: true });
 
@@ -208,7 +227,9 @@ function copySignatureDb(sourceDir, targetDir) {
 
     const source = path.join(sourceDir, entry.name);
     const target = path.join(targetDir, entry.name);
-    fs.copyFileSync(source, target);
+    if (!sameDir) {
+      fs.copyFileSync(source, target);
+    }
     copied.push(entry.name);
   }
 

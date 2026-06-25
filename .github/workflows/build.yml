@@ -66,15 +66,17 @@ jobs:
             libayatana-appindicator3-dev \
             librsvg2-dev \
             policykit-1 \
-            rpm
+            rpm \
+            clamav \
+            clamav-freshclam
 
       - name: Install dependencies (macOS)
         if: matrix.platform == 'macos'
-        run: brew install openssl
+        run: brew install openssl clamav
 
       - name: Install dependencies (Windows)
         if: matrix.platform == 'windows'
-        run: choco install openssl --no-progress
+        run: choco install openssl clamav -y --no-progress
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
